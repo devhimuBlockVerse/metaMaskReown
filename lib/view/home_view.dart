@@ -75,51 +75,7 @@ class _HomeViewState extends State<HomeView> {
                          }
                        },
                      ),
-                     // ElevatedButton.icon(
-                     //    // onPressed: walletVM.isLoading
-                     //    //     ? null : () async {
-                     //    //
-                     //    //
-                     //    //   await walletVM.connectWallet();
-                     //    //   await Future.delayed(Duration(milliseconds: 100));
-                     //    //
-                     //    //   if (walletVM.isConnected) {
-                     //    //     Navigator.pushReplacement(
-                     //    //       context,
-                     //    //       MaterialPageRoute(
-                     //    //         builder: (_) => const DashboardView(),
-                     //    //       ),
-                     //    //     );
-                     //    //   }
-                     //    // },
-                     //   onPressed: () async {
-                     //     await walletVM.connectWallet();
-                     //
-                     //     if (walletVM.isConnected) {
-                     //       // Navigate to dashboard on successful wallet connect
-                     //       Navigator.push(
-                     //         context,
-                     //         MaterialPageRoute(builder: (context) => const DashboardView()),
-                     //       );
-                     //     } else {
-                     //       ScaffoldMessenger.of(context).showSnackBar(
-                     //         const SnackBar(
-                     //           content: Text("Wallet connection failed."),
-                     //         ),
-                     //       );
-                     //     }
-                     //   },
-                     //    icon: Icon(walletVM.isLoading
-                     //        ? Icons.hourglass_empty
-                     //        : walletVM.isConnected
-                     //        ? Icons.link_off
-                     //        : Icons.link),
-                     //    label: Text(walletVM.isLoading
-                     //        ? 'Please Wait...'
-                     //        : walletVM.isConnected
-                     //        ? 'Disconnect Wallet'
-                     //        : 'Connect Wallet'),
-                     //  ),
+
                    ],
                  );
                 },

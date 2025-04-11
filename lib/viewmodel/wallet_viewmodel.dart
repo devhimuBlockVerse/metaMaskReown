@@ -5,42 +5,6 @@ import 'package:http/http.dart' as http;
 
 class WalletViewModel extends ChangeNotifier {
 
-  // WalletViewModel(BuildContext context) {
-  //   _appKitModal = ReownAppKitModal(
-  //     context: context,
-  //     projectId: 'f3d7c5a3be3446568bcc6bcc1fcc6389',
-  //     metadata: const PairingMetadata(
-  //       name: "Example App",
-  //       description: "Example Description",
-  //       url: 'https://example.com/',
-  //       icons: ['https://example.com/logo.png'],
-  //       redirect: Redirect(
-  //         native: 'exampleapp',
-  //         universal: 'https://reown.com/exampleapp',
-  //         linkMode: true,
-  //       ),
-  //     ),
-  //     logLevel: LogLevel.info,
-  //     enableAnalytics: true,
-  //     featuresConfig: FeaturesConfig(
-  //       email: true,
-  //       socials: [
-  //         AppKitSocialOption.Google,
-  //         AppKitSocialOption.Discord,
-  //         AppKitSocialOption.Facebook,
-  //         AppKitSocialOption.GitHub,
-  //         AppKitSocialOption.X,
-  //         AppKitSocialOption.Apple,
-  //         AppKitSocialOption.Twitch,
-  //         AppKitSocialOption.Farcaster,
-  //       ],
-  //       showMainWallets: true,
-  //     ),
-  //   );
-  //   _init();
-  // }
-
-
   late ReownAppKitModal _appKitModal;
   Web3Client? _web3client;
 
@@ -153,8 +117,14 @@ class WalletViewModel extends ChangeNotifier {
 
   /// Helper to extract wallet info from the modal.
   void _setWalletInfo() {
-    _userName = _appKitModal.selectedWallet?.listing.name;
-    _walletId = _appKitModal.selectedWallet?.listing.id;
+    final wallet = _appKitModal.selectedWallet;
+    _userName = wallet?.listing.name;
+    _walletId = wallet?.listing.id;
+    _networkName = _appKitModal.selectedChain?.name;
+    _chainId = _appKitModal.selectedChain?.chainId;
+    _blockchainIdentity = _appKitModal.blockchainIdentity?.name;
+    // _blockchainIdentity = _appKitModal.blockchainIdentity?.address ?? 'Not Available';
+
 
   }
 
@@ -169,10 +139,10 @@ class WalletViewModel extends ChangeNotifier {
   /// Set up the web3 client with the desired RPC URL.
   void _setupWeb3() {
     const rpcUrl = "https://polygon-rpc.com"; // target chain.
-    _web3client = Web3Client(rpcUrl, http.Client());
+     _web3client = Web3Client(rpcUrl, http.Client());
   }
 
-  /// Fetch the native balance for the connected wallet.
+  /// Fetch the native balance for the connected wallet. EthereumAddress
   Future<void> fetchBalance() async {
     if (_web3client != null && _walletId != null) {
       try {

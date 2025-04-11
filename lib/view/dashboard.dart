@@ -78,6 +78,12 @@ class DashboardView extends StatelessWidget {
                   const SizedBox(height: 10),
                   _buildInfoRow('Balance', '${walletVM.balanceInEth} ETH'),
                   const SizedBox(height: 20),
+                  _buildInfoRow('Chain ID', '${walletVM.chainId ?? 'N/A'}'),
+                  const SizedBox(height: 20),
+                  _buildInfoRow('Network', '${walletVM.networkName ?? 'N/A'}'),
+                  const SizedBox(height: 20),
+                  _buildInfoRow('Blockchain Identity', '${walletVM.blockchainIdentity ?? 'N/A'}'),
+                  const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: walletVM.isLoading
                         ? null
