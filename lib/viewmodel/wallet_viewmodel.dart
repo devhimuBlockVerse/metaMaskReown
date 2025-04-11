@@ -201,6 +201,88 @@ import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
 
 class WalletViewModel extends ChangeNotifier {
+
+  // WalletViewModel(BuildContext context) {
+  //   _appKitModal = ReownAppKitModal(
+  //     context: context,
+  //     projectId: 'f3d7c5a3be3446568bcc6bcc1fcc6389',
+  //     metadata: const PairingMetadata(
+  //       name: "Example App",
+  //       description: "Example Description",
+  //       url: 'https://example.com/',
+  //       icons: ['https://example.com/logo.png'],
+  //       redirect: Redirect(
+  //         native: 'exampleapp',
+  //         universal: 'https://reown.com/exampleapp',
+  //         linkMode: true,
+  //       ),
+  //     ),
+  //     logLevel: LogLevel.info,
+  //     enableAnalytics: true,
+  //     featuresConfig: FeaturesConfig(
+  //       email: true,
+  //       socials: [
+  //         AppKitSocialOption.Google,
+  //         AppKitSocialOption.Discord,
+  //         AppKitSocialOption.Facebook,
+  //         AppKitSocialOption.GitHub,
+  //         AppKitSocialOption.X,
+  //         AppKitSocialOption.Apple,
+  //         AppKitSocialOption.Twitch,
+  //         AppKitSocialOption.Farcaster,
+  //       ],
+  //       showMainWallets: true,
+  //     ),
+  //   );
+  //   _init();
+  // }
+  Future<void> init(BuildContext context) async {
+    _appKitModal = ReownAppKitModal(
+      context: context,
+      projectId: 'f3d7c5a3be3446568bcc6bcc1fcc6389',
+      metadata: const PairingMetadata(
+        name: "Example App",
+        description: "Example Description",
+        url: 'https://example.com/',
+        icons: ['https://example.com/logo.png'],
+        redirect: Redirect(
+          native: 'exampleapp',
+          universal: 'https://reown.com/exampleapp',
+          linkMode: true,
+        ),
+
+      ),
+      logLevel: LogLevel.error,
+      enableAnalytics: true,
+
+      featuresConfig: FeaturesConfig(
+        email: true,
+        socials: [
+          AppKitSocialOption.Google,
+          AppKitSocialOption.Discord,
+          AppKitSocialOption.Facebook,
+          AppKitSocialOption.GitHub,
+          AppKitSocialOption.X,
+          AppKitSocialOption.Apple,
+          AppKitSocialOption.Twitch,
+          AppKitSocialOption.Farcaster,
+        ],
+        showMainWallets: true,
+      ),
+    );
+
+    await _appKitModal.init();
+    _isConnected = _appKitModal.isConnected;
+    if (_isConnected) {
+      _setWalletInfo();
+      if (_walletId != null) {
+        _setupWeb3();
+        await fetchBalance();
+      }
+    }
+    notifyListeners();
+  }
+
   late ReownAppKitModal _appKitModal;
   Web3Client? _web3client;
 
@@ -221,40 +303,7 @@ class WalletViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  WalletViewModel(BuildContext context) {
-    _appKitModal = ReownAppKitModal(
-      context: context,
-      projectId: 'f3d7c5a3be3446568bcc6bcc1fcc6389',
-      metadata: const PairingMetadata(
-        name: "Example App",
-        description: "Example Description",
-        url: 'https://example.com/',
-        icons: ['https://example.com/logo.png'],
-        redirect: Redirect(
-          native: 'exampleapp',
-          universal: 'https://reown.com/exampleapp',
-          linkMode: true,
-        ),
-      ),
-      logLevel: LogLevel.info,
-      enableAnalytics: true,
-      featuresConfig: FeaturesConfig(
-        email: true,
-        socials: [
-          AppKitSocialOption.Google,
-          AppKitSocialOption.Discord,
-          AppKitSocialOption.Facebook,
-          AppKitSocialOption.GitHub,
-          AppKitSocialOption.X,
-          AppKitSocialOption.Apple,
-          AppKitSocialOption.Twitch,
-          AppKitSocialOption.Farcaster,
-        ],
-        showMainWallets: true,
-      ),
-    );
-    _init();
-  }
+
 
   /// Initialize the modal; if already connected, set wallet info and fetch balance.
   Future<void> _init() async {
@@ -304,8 +353,7 @@ class WalletViewModel extends ChangeNotifier {
 
   /// Helper to extract wallet info from the modal.
   void _setWalletInfo() {
-    // Assume that the connected wallet information is stored in selectedWallet.
-    // 'listing.name' is used as the user name, and 'listing.id' as the wallet id.
+
     _userName = _appKitModal.selectedWallet?.listing.name;
     _walletId = _appKitModal.selectedWallet?.listing.id;
   }

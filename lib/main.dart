@@ -12,15 +12,7 @@ import 'components/buttonComponent.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    MultiProvider(
-      providers: [
-        // Ensure the WalletViewModel is available to all children.
-        ChangeNotifierProvider(
-          create: (context) => WalletViewModel(context),
-        ),
-      ],
-      child: const MyApp(),
-    ),
+    const MyApp(),
   );
 }
 
@@ -29,14 +21,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Reown AppKit Wallet',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WalletViewModel(),)
+      ],
+
+      child: MaterialApp(
+        title: 'Reown AppKit Wallet',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
+        ),
+        home: const HomeView(),
       ),
-      home: const HomeView(),
     );
   }
 }
