@@ -39,6 +39,39 @@ class WalletViewModel extends ChangeNotifier {
   //   );
   //   _init();
   // }
+
+
+  late ReownAppKitModal _appKitModal;
+  Web3Client? _web3client;
+
+  bool _isConnected = false;
+  bool get isConnected => _isConnected;
+
+  String? _userName;
+  String? get userName => _userName;
+
+  String? _walletId;
+  String? get walletId => _walletId;
+
+  EtherAmount? _walletBalance;
+  String get balanceInEth => _walletBalance != null
+      ? _walletBalance!.getValueInUnit(EtherUnit.ether).toStringAsFixed(5)
+      : '0';
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+
+  String? _networkName;
+  String? get networkName => _networkName;
+
+  String? _chainId;
+  String? get chainId => _chainId;
+
+
+  String? _blockchainIdentity;
+  String? get  blockchainIdentity => _blockchainIdentity;
+
   Future<void> init(BuildContext context) async {
     _appKitModal = ReownAppKitModal(
       context: context,
@@ -74,46 +107,6 @@ class WalletViewModel extends ChangeNotifier {
       ),
     );
 
-    await _appKitModal.init();
-    _isConnected = _appKitModal.isConnected;
-    if (_isConnected) {
-      _setWalletInfo();
-      if (_walletId != null) {
-        _setupWeb3();
-        await fetchBalance();
-      }
-    }
-    notifyListeners();
-  }
-
-  late ReownAppKitModal _appKitModal;
-  Web3Client? _web3client;
-
-  bool _isConnected = false;
-  bool get isConnected => _isConnected;
-
-  String? _userName;
-  String? get userName => _userName;
-
-  String? _walletId;
-  String? get walletId => _walletId;
-
-  EtherAmount? _walletBalance;
-  String get balanceInEth => _walletBalance != null
-      ? _walletBalance!.getValueInUnit(EtherUnit.ether).toStringAsFixed(5)
-      : '0';
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-
-  String? _networkName;
-  String? get networkName => _networkName;
-
-
-
-  /// Initialize the modal; if already connected, set wallet info and fetch balance.
-  Future<void> _init() async {
     await _appKitModal.init();
     _isConnected = _appKitModal.isConnected;
     if (_isConnected) {
@@ -175,7 +168,7 @@ class WalletViewModel extends ChangeNotifier {
 
   /// Set up the web3 client with the desired RPC URL.
   void _setupWeb3() {
-    const rpcUrl = "https://polygon-rpc.com"; // Adjust for your target chain.
+    const rpcUrl = "https://polygon-rpc.com"; // target chain.
     _web3client = Web3Client(rpcUrl, http.Client());
   }
 
