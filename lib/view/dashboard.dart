@@ -1,33 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../viewmodel/wallet_viewmodel.dart';
+ import '../viewmodel/wallet_viewmodel.dart';
+import 'home_view.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final walletVM = Provider.of<WalletViewModel>(context, listen: false);
-    final userName = walletVM.getUserName() ?? 'Unknown User';
-    final walletId = walletVM.getWalletAddress() ?? 'No Wallet ID';
-
+    final walletVM = Provider.of<WalletViewModel>(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Wallet Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await walletVM.disconnectWallet();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeView()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => walletVM.fetchBalance(),
+          ),
+        ],
       ),
       body: Center(
         child: Card(
-          elevation: 10,
-          margin: const EdgeInsets.all(30),
+          margin: const EdgeInsets.all(20),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('👤 User: $userName'),
-                const SizedBox(height: 12),
-                Text('💼 Wallet ID: $walletId'),
+                Text('User: ${walletVM.userName ?? 'Not Connected'}'),
+                const SizedBox(height: 20),
+                Text('Wallet ID: ${walletVM.walletId ?? 'Not Connected'}'),
+                const SizedBox(height: 20),
+                Text('Balance: ${walletVM.balanceInEth} ETH'),
               ],
             ),
           ),

@@ -13,7 +13,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final walletVM = Provider.of<WalletViewModel>(context);
+    final walletVM = Provider.of<WalletViewModel>(context,listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,9 +29,8 @@ class HomeView extends StatelessWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: walletVM.isLoading
-                    ? null
-                    : () async {
-                  await walletVM.connectOrDisconnectWallet();
+                    ? null : () async {
+                  await walletVM.connectWallet();
                   if (walletVM.isConnected) {
                     Navigator.pushReplacement(
                       context,
