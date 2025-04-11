@@ -41,7 +41,7 @@ dependencies:
   provider:
   web3dart: ^2.6.1
   http:
-
+  shared_preferences:
 
 dev_dependencies:
   flutter_test:
