@@ -17,13 +17,20 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
 
+
   @override
   void initState() {
-    // TODO: implement initState
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<WalletViewModel>(context, listen: false).init(context);
-    });
+     super.initState();
+
+     WidgetsBinding.instance.addPostFrameCallback((_) async{
+       final walletVM = Provider.of<WalletViewModel>(context, listen: false);
+       await walletVM.init(context);
+
+       if(walletVM.isConnected){
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardView()));
+       }
+       // Provider.of<WalletViewModel>(context, listen: false).init(context);
+    });;
   }
 
   @override

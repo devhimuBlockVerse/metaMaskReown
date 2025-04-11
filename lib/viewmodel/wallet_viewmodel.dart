@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reown_appkit/reown_appkit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
 
@@ -37,6 +38,10 @@ class WalletViewModel extends ChangeNotifier {
   String? get  blockchainIdentity => _blockchainIdentity;
 
   Future<void> init(BuildContext context) async {
+
+    final prefs = await SharedPreferences.getInstance();
+    final wasConnected = prefs.getBool('isConnected') ?? false;
+
     _appKitModal = ReownAppKitModal(
       context: context,
       projectId: 'f3d7c5a3be3446568bcc6bcc1fcc6389',
@@ -71,15 +76,27 @@ class WalletViewModel extends ChangeNotifier {
       ),
     );
 
+
+
     await _appKitModal.init();
-    _isConnected = _appKitModal.isConnected;
-    if (_isConnected) {
+
+    ///Saving User Connected Session in Shared Preferences
+    if(wasConnected){
+      _isConnected = true;
       _setWalletInfo();
-      if (_walletId != null) {
-        _setupWeb3();
-        await fetchBalance();
+      _setupWeb3();
+      await fetchBalance();
+    }else{
+      _isConnected = _appKitModal.isConnected;
+      if (_isConnected) {
+        _setWalletInfo();
+        if (_walletId != null) {
+          _setupWeb3();
+          await fetchBalance();
+        }
       }
     }
+
     notifyListeners();
   }
 
@@ -87,8 +104,9 @@ class WalletViewModel extends ChangeNotifier {
   Future<void> connectWallet() async {
     _isLoading = true;
     notifyListeners();
+
     if (!_appKitModal.isConnected) {
-      // This will show the MetaMask permission dialog.
+      /// This will show the MetaMask permission dialog.
       await _appKitModal.openModalView();
       _isConnected = _appKitModal.isConnected;
       if (_isConnected) {
@@ -96,6 +114,9 @@ class WalletViewModel extends ChangeNotifier {
         if (_walletId != null) {
           _setupWeb3();
           await fetchBalance();
+
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setBool('isConnected', true);
         }
       }
     }
@@ -107,9 +128,13 @@ class WalletViewModel extends ChangeNotifier {
   Future<void> disconnectWallet() async {
     _isLoading = true;
     notifyListeners();
+
     if (_appKitModal.isConnected) {
       await _appKitModal.disconnect();
     }
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isConnected', false);
+
     _clearWalletInfo();
     _isLoading = false;
     notifyListeners();
