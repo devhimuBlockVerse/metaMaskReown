@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:reown_appkit/reown_appkit.dart';
+import 'package:reown_appkit_wallet_flutter/view/home_view.dart';
+import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
 import 'dart:ui';
 
 import 'components/buttonComponent.dart';
@@ -7,7 +10,12 @@ import 'components/buttonComponent.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const MyApp());
+  runApp(MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => WalletViewModel(context)),
+      ],
+
+      child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -23,8 +31,8 @@ class MyApp extends StatelessWidget {
             seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const MyHomePage(
-          title: 'Reown AppKit Wallet'),
+      // home: const MyHomePage(title: 'Reown AppKit Wallet'),
+      home: const HomeView(),
     );
   }
 }
@@ -44,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isNetworkSelecting = false;
   String? selectedNetworkLogo;
   bool isNetworkUpdated = false;
-
+  String? currentBalance;
 
   @override
   void initState() {
@@ -86,7 +94,9 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     _appKitModal
         .init()
-        .then((value) => setState(() {}));
+        .then((value) => setState(() {
+
+    }));
   }
   void _updateNetwork() {
     setState(() {
@@ -158,6 +168,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   const SizedBox(height: 16),
                   if (_appKitModal.isConnected) ...[
+                    // Text('Current Balance: ${currentBalance ?? 'Loading...'}'), // Display balance
+
                     _buildCardItem(
                       context,
                       ReownAppKitButton(
@@ -174,14 +186,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: () => _appKitModal.openModalView(),
                       ),
                     ),
-                    _buildCardItem(
-                      context,
-                      ReownAppKitButton(
-                        label: 'Address',
-                        icon: Icons.location_on,
-                        onPressed: () => _appKitModal.openModalView(),
-                      ),
-                    ),
+                    // _buildCardItem(
+                    //   context,
+                    //   ReownAppKitButton(
+                    //     label: 'Address',
+                    //     icon: Icons.location_on,
+                    //     onPressed: () => _appKitModal.openModalView(),
+                    //   ),
+                    // ),
                   ],
                 ],
               ),
