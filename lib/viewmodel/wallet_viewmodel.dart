@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reown_appkit/reown_appkit.dart';
+import 'package:reown_appkit_wallet_flutter/services/smart_contract_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ class WalletViewModel extends ChangeNotifier {
 
   late ReownAppKitModal _appKitModal;
   Web3Client? _web3client;
+  late SmartContractService _smartContractService;
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
@@ -80,6 +82,7 @@ class WalletViewModel extends ChangeNotifier {
 
     await _appKitModal.init();
 
+
     ///Saving User Connected Session in Shared Preferences
     if(wasConnected){
       _isConnected = true;
@@ -92,11 +95,31 @@ class WalletViewModel extends ChangeNotifier {
         _setWalletInfo();
         if (_walletId != null) {
           _setupWeb3();
+          await _smartContractService.init();
           await fetchBalance();
         }
       }
     }
 
+    notifyListeners();
+  }
+
+
+  Future<void> interactWithContract(String methodName, List<dynamic> parameters)async{
+    if(!_isConnected || _web3client == null || _walletId == null){
+      print("Wallet not connected or web3 client not initialized");
+      // throw Exception("Wallet not connected or web3 client not initialized.");
+      return;
+    }
+    try{
+      final result = await _smartContractService.callContractMethod(
+        methodName, parameters, EthereumAddress.fromHex(_walletId!)
+      );
+      debugPrint("Contract call result: $result");
+    }catch (e){
+      debugPrint("Error calling contract method: $e");
+
+    }
     notifyListeners();
   }
 
@@ -148,8 +171,6 @@ class WalletViewModel extends ChangeNotifier {
     _networkName = _appKitModal.selectedChain?.name;
     _chainId = _appKitModal.selectedChain?.chainId;
     _blockchainIdentity = _appKitModal.blockchainIdentity?.name;
-    // _blockchainIdentity = _appKitModal.blockchainIdentity?.address ?? 'Not Available';
-
 
   }
 
@@ -165,6 +186,9 @@ class WalletViewModel extends ChangeNotifier {
   void _setupWeb3() {
     const rpcUrl = "https://polygon-rpc.com"; // target chain.
      _web3client = Web3Client(rpcUrl, http.Client());
+    _smartContractService = SmartContractService(_web3client,this);
+
+
   }
 
   /// Fetch the native balance for the connected wallet. EthereumAddress
