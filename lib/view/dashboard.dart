@@ -86,6 +86,22 @@ class DashboardView extends StatelessWidget {
                     const SizedBox(height: 20),
                     _buildInfoRow('Blockchain Identity', '${walletVM.blockchainIdentity ?? 'N/A'}'),
                     const SizedBox(height: 20),
+
+                    ElevatedButton.icon(
+                        onPressed: ()async{
+                          await walletVM.getUserDataFromContract();
+                        },
+                        icon: const Icon(Icons.data_object),
+                        label: const Text('Get user Contract Data')
+                    ),
+                    if(walletVM.userData != null) ...[
+                      const SizedBox(height: 15),
+                      _buildInfoRow("Contract Data", walletVM.userData!),
+
+                    ],
+
+                    const SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     ElevatedButton.icon(
                       onPressed: walletVM.isLoading
                           ? null

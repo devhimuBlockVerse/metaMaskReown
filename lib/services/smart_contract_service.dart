@@ -42,7 +42,7 @@ class SmartContractService {
     }
 
     try {
-      await init(); // Ensure initialization
+      await init();
 
       final function = _contract.function(functionName);
       final result = await web3client!.call(

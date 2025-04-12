@@ -39,6 +39,9 @@ class WalletViewModel extends ChangeNotifier {
   String? _blockchainIdentity;
   String? get  blockchainIdentity => _blockchainIdentity;
 
+  String? _userData;
+  String? get userData => _userData;
+
   Future<void> init(BuildContext context) async {
 
     final prefs = await SharedPreferences.getInstance();
@@ -123,6 +126,28 @@ class WalletViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> getUserDataFromContract()async{
+    if(!_isConnected || _web3client == null || _walletId == null) return;
+
+    try{
+      final result = await _smartContractService.callContractMethod(
+        "getUserData", [], EthereumAddress.fromHex(_walletId!)
+      );
+      if(result != null && result is List && result.length ==2){
+        final name = result[0] as String;
+        final value = result[1];
+        _userData = "Name: $name, Value: $value";
+      }else{
+        _userData = "Unexpected result format.";
+      }
+      debugPrint("Contract call result: $result");
+
+    }catch (e){
+      _userData = "Error calling contract method: $e";
+    }
+    notifyListeners();
+  }
+
   /// Connect the wallet using the ReownAppKitModal UI.
   Future<void> connectWallet() async {
     _isLoading = true;
@@ -195,7 +220,10 @@ class WalletViewModel extends ChangeNotifier {
   Future<void> fetchBalance() async {
     if (_web3client != null && _walletId != null) {
       try {
-        final address = EthereumAddress.fromHex(_walletId!);
+        // final address = EthereumAddress.fromHex(_walletId!);
+        final lowerCaseAddress = "0xc57ca95b47569778a828d19178114f4db188b89b";
+
+        final address = EthereumAddress.fromHex(lowerCaseAddress);
         _walletBalance = await _web3client!.getBalance(address);
       } catch (e) {
         debugPrint("Error fetching balance: $e");
