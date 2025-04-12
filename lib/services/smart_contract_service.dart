@@ -1,8 +1,10 @@
 
 
 import 'package:flutter/services.dart';
-import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
+// import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
 import 'package:web3dart/web3dart.dart';
+
+import '../viewmodel/wallet_view_model2.dart';
 
 class SmartContractService {
   final Web3Client? web3client;
@@ -99,7 +101,10 @@ class SmartContractService {
 
     final getContractFunction = factoryContract.function("getContractForUser");
 
-    final userWallet = EthereumAddress.fromHex(_walletViewModel.walletId!);
+    final userWallet = EthereumAddress.fromHex(EthereumAddress.fromHex(_walletViewModel.walletId!).hexEip55);
+    // final userWallet = EthereumAddress.fromHex(_walletViewModel.walletId!.toLowerCase());
+    // final lowerCaseAddress = "0xc57ca95b47569778a828d19178114f4db188b89b";
+    // final userWallet = EthereumAddress.fromHex(lowerCaseAddress);
 
     final response = await web3client!.call(
       contract: factoryContract,

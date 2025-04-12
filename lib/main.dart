@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import 'package:reown_appkit_wallet_flutter/view/home_view.dart';
-import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
+// import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
 import 'dart:ui';
+import '../viewmodel/wallet_view_model2.dart';
+
 
 import 'components/buttonComponent.dart';
 

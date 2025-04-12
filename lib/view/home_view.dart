@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../components/buttonComponent.dart';
-import '../viewmodel/wallet_viewmodel.dart';
+// import '../viewmodel/wallet_viewmodel.dart';
 import 'dashboard.dart';
+import '../viewmodel/wallet_view_model2.dart';
+
 
 
 

@@ -2,8 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
- import '../viewmodel/wallet_viewmodel.dart';
+ // import '../viewmodel/wallet_viewmodel.dart';
 import 'home_view.dart';
+import '../viewmodel/wallet_view_model2.dart';
+
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -80,25 +82,25 @@ class DashboardView extends StatelessWidget {
                     const SizedBox(height: 10),
                     _buildInfoRow('Balance', '${walletVM.balanceInEth} ETH'),
                     const SizedBox(height: 20),
-                    _buildInfoRow('Chain ID', '${walletVM.chainId ?? 'N/A'}'),
+                    _buildInfoRow('Chain ID', walletVM.chainId ?? 'N/A'),
                     const SizedBox(height: 20),
                     _buildInfoRow('Network', '${walletVM.networkName ?? 'N/A'}'),
                     const SizedBox(height: 20),
                     _buildInfoRow('Blockchain Identity', '${walletVM.blockchainIdentity ?? 'N/A'}'),
                     const SizedBox(height: 20),
 
-                    ElevatedButton.icon(
-                        onPressed: ()async{
-                          await walletVM.getUserDataFromContract();
-                        },
-                        icon: const Icon(Icons.data_object),
-                        label: const Text('Get user Contract Data')
-                    ),
-                    if(walletVM.userData != null) ...[
-                      const SizedBox(height: 15),
-                      _buildInfoRow("Contract Data", walletVM.userData!),
-
-                    ],
+                    // ElevatedButton.icon(
+                    //     onPressed: ()async{
+                    //       await walletVM.getUserDataFromContract();
+                    //     },
+                    //     icon: const Icon(Icons.data_object),
+                    //     label: const Text('Get user Contract Data')
+                    // ),
+                    // if(walletVM.userData != null) ...[
+                    //   const SizedBox(height: 15),
+                    //   _buildInfoRow("Contract Data", walletVM.userData!),
+                    //
+                    // ],
 
                     const SizedBox(height: 20),
                     const SizedBox(height: 20),
