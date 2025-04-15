@@ -69,7 +69,6 @@ flutter:
   assets:
     - assets/app_icon.png
     - assets/abi/MyContract.json
-    - assets/abi/FactoryContract.json
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
