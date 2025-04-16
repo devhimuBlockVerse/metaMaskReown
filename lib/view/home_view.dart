@@ -31,13 +31,11 @@ class _HomeViewState extends State<HomeView> {
        if(walletVM.isConnected){
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardView()));
        }
-       // Provider.of<WalletViewModel>(context, listen: false).init(context);
-    });;
+     });;
   }
 
   @override
   Widget build(BuildContext context) {
-    // final walletVM = Provider.of<WalletViewModel>(context,listen: false);
 
     return Scaffold(
       appBar: AppBar(

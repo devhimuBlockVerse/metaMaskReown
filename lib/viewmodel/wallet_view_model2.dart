@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,33 +11,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
 
+class WalletData {
+  final String? balance;
+  final String? decimals;
+  final String? totalSupply;
+
+  WalletData({this.balance, this.decimals, this.totalSupply});
+}
+
 class WalletViewModel extends ChangeNotifier {
-  // final String _rpcUrl ="https://sepolia.infura.io/v3/b6521574dded4cc4b16f0975d484da49";
-  //  final String _rpcUrl = 'https://mainnet.infura.io/v3/b6521574dded4cc4b16f0975d484da49';
-   final String _rpcUrl = 'https://sepolia.io/v3/b6521574dded4cc4b16f0975d484da49';
-
-  // From my Meta mask Account
-  final String _privateKey = '4c9d31834be536e8ef62d3e1ab8997775825de42fdeb76fae2efbfbc9a2db159';
-
- // From Etherscan Website
- //  final String _contractAddress = '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d';
-   final String _contractAddress = '0x298f3EF46F26625e709c11ca2e84a7f34489C71d';
 
   late ReownAppKitModal _appKitModal;
-  late Web3Client? _web3client;
-  DeployedContract? _contract;
+
   EthereumAddress? _publicAddress;
-  Credentials? _credentials;
+
+
+  final StreamController<WalletData> _walletDataController =
+  StreamController<WalletData>.broadcast();
+  Stream<WalletData> get walletDataStream => _walletDataController.stream;
 
 
   bool _isConnected = false;
   String? _userName;
   String? _walletId;
-  EtherAmount? _walletBalance;
   bool _isLoading = false;
-  String? _networkName;
   String? _chainId;
-  String? _blockchainIdentity;
   String? _userData;
 
   String? _name;
@@ -43,18 +43,16 @@ class WalletViewModel extends ChangeNotifier {
   BigInt? _balanace;
    int? _decimals;
    BigInt? _totalSupply;
+  bool _isFetchingDetails = false;
+  bool get isFetchingDetails => _isFetchingDetails;
 
   String? get walletId => _walletId;
   bool get isConnected => _isConnected;
   String? get userName => _userName;
-  String get balanceInEth => _walletBalance != null
-      ? _walletBalance!.getValueInUnit(EtherUnit.ether).toStringAsFixed(5)
-      : '0';
+
   bool get isLoading => _isLoading;
-  String? get networkName => _networkName;
-  String? get chainId => _chainId;
-  String? get  blockchainIdentity => _blockchainIdentity;
-  String? get userData => _userData;
+   String? get chainId => _chainId;
+   String? get userData => _userData;
 
 
   String? get name => _name;
@@ -103,79 +101,39 @@ class WalletViewModel extends ChangeNotifier {
         showMainWallets: true,
       ),
     );
-
-
-
     await _appKitModal.init();
 
-
-
     ///Saving User Connected Session in Shared Preferences
-    // if(wasConnected){
-    //   _isConnected = true;
-    //   _setWalletInfo();
-    //   // _setupWeb3();
-    //   await initWallet();
-    //   await fetchBalance();
-    // }else{
-    //   _isConnected = _appKitModal.isConnected;
-    //   if (_isConnected) {
-    //     _setWalletInfo();
-    //     if (_walletId != null) {
-    //       // _setupWeb3();
-    //       await initWallet();
-    //       await fetchBalance();
-    //
-    //     }
-    //   }
-    // }
 
-    if (wasConnected) {
+
+    if (wasConnected && _appKitModal.isConnected) {
+
       _isConnected = true;
-      _setWalletInfo();
-      await _setupWeb3();
-      await _loadContract();
-      await _fetchDetails();
-     } else {
+      await waitForSession();
+      if(_appKitModal.session != null && _walletId != null ){
+        await _fetchDetails();
+        _setWalletInfo();
+        notifyListeners();
+
+      }else {
+        debugPrint('[ERROR] Session or wallet ID not immediately available after init.');
+      }
+
+    } else {
       _isConnected = _appKitModal.isConnected;
       if (_isConnected) {
-        _setWalletInfo();
-        await _setupWeb3();
-        await _loadContract();
         await _fetchDetails();
-         prefs.setBool('isConnected', true);
+        _setWalletInfo();
+        prefs.setBool('isConnected', true);
+        notifyListeners();
+
       }
     }
 
     notifyListeners();
   }
 
-
-
-
   /// Connect the wallet using the ReownAppKitModal UI.
-  // Future<void> connectWallet() async {
-  //   _isLoading = true;
-  //   notifyListeners();
-  //
-  //   if (!_appKitModal.isConnected) {
-  //     /// This will show the MetaMask permission dialog.
-  //     await _appKitModal.openModalView();
-  //     _isConnected = _appKitModal.isConnected;
-  //     if (_isConnected) {
-  //       _setWalletInfo();
-  //       if (_walletId != null) {
-  //         _setupWeb3();
-  //         await fetchBalance();
-  //
-  //         final prefs = await SharedPreferences.getInstance();
-  //         prefs.setBool('isConnected', true);
-  //       }
-  //     }
-  //   }
-  //   _isLoading = false;
-  //   notifyListeners();
-  // }
    Future<void> connectWallet() async {
      _isLoading = true;
      notifyListeners();
@@ -183,15 +141,18 @@ class WalletViewModel extends ChangeNotifier {
      if (!_appKitModal.isConnected) {
        await _appKitModal.openModalView();
        _isConnected = _appKitModal.isConnected;
-       if (_isConnected) {
-         _setWalletInfo();
-         await _setupWeb3();
-         await _loadContract();
+       await waitForSession();
+
+       if (_isConnected && _appKitModal.session != null && _walletId != null) {
          await _fetchDetails();
+         _setWalletInfo();
+
           final prefs = await SharedPreferences.getInstance();
          prefs.setBool('isConnected', true);
          notifyListeners();
-       }
+       }else {
+         debugPrint('[ERROR] Session or wallet ID not immediately available after connect.');
+        }
      }
      _isLoading = false;
      notifyListeners();
@@ -215,12 +176,21 @@ class WalletViewModel extends ChangeNotifier {
   /// Helper to extract wallet info from the modal.
   void _setWalletInfo() {
     final wallet = _appKitModal.selectedWallet;
-    _userName = wallet?.listing.name;
-    _walletId = wallet?.listing.id;
-    _networkName = _appKitModal.selectedChain?.name;
-    _chainId = _appKitModal.selectedChain!.chainId;
-    _blockchainIdentity = _appKitModal.blockchainIdentity?.name;
+    final chain = _appKitModal.selectedChain;
 
+    if(wallet == null || wallet.listing == null){
+      debugPrint('[ERROR] Wallet or wallet listing is null!');
+      return;
+    }
+
+    _userName = wallet.listing.name;
+    _walletId = wallet.listing.id;
+    if (chain != null) {
+      _chainId = chain.chainId;
+    } else {
+      debugPrint('[ERROR] Selected chain is null!');
+      _chainId = null;
+    }
   }
 
   /// Clear wallet info on disconnect.
@@ -228,261 +198,276 @@ class WalletViewModel extends ChangeNotifier {
     _isConnected = false;
     _userName = null;
     _walletId = null;
-    _walletBalance = null;
-    _name = null;
-    _symbol = null;
+
     _decimals = null ;
     _totalSupply = null;
     _balanace = null;
   }
 
-  /// Set up the web3 client with the desired RPC URL.
-  // void _setupWeb3() {
-  //   const rpcUrl = "https://polygon-rpc.com"; // target chain.
-  //    _web3client = Web3Client(rpcUrl, http.Client());
-  //   _smartContractService = SmartContractService(_web3client,this);
-  // }
- Future<void> _setupWeb3() async{
-    // final httpClient = Client();
-    // _web3client = Web3Client(_rpcUrl, httpClient);
-    //
-    _web3client = Web3Client(_rpcUrl, Client());
-    _credentials = EthPrivateKey.fromHex(_privateKey);
-   }
-
-  /// Fetch the native balance for the connected wallet. EthereumAddress
-  Future<void> fetchBalance() async {
-    if (_web3client != null && _walletId != null) {
-      try {
-        final address = EthereumAddress.fromHex(EthereumAddress.fromHex(_walletId!).hexEip55);
-        // final address = EthereumAddress.fromHex(_walletId!.toLowerCase());
-        // final lowerCaseAddress = "0xc57ca95b47569778a828d19178114f4db188b89b";
-        // final address = EthereumAddress.fromHex(lowerCaseAddress);
-        _walletBalance = await _web3client!.getBalance(address);
-      } catch (e) {
-        debugPrint("Error fetching balance: $e");
-      }
-      notifyListeners();
-    }
-  }
-
-  /// FutureWork : Start a timer to refresh the balance periodically.
-  void startBalanceRefreshTimer() {
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 15));
-      if (_isConnected) {
-        await fetchBalance();
-        return true;
-      }
-      return false;
-    });
-  }
-
   /// Service Wallet COdes
   Future<void>initWallet()async{
-    // _web3client = Web3Client(_rpcUrl, Client());
-
-    _credentials = EthPrivateKey.fromHex(_privateKey);
-    _publicAddress = await _credentials!.extractAddress();
-    // _publicAddress = await _credentials!.address;
-
-    await _loadContract();
-    await _fetchDetails();
+     await _fetchDetails();
+     _setWalletInfo();
     _isConnected = true;
     notifyListeners();
   }
 
-  // Future<void>_loadContract()async{
-  //   final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
-  //   // final abiJson = jsonDecode(abiString)as List<dynamic>;
-  //   // final contractAbi = ContractAbi.fromJson(jsonEncode(abiJson), "MyContract");
-  //   // final contractAbi = ContractAbi.fromJson(abiString, "MyContract");
-  //
-  //
-  //
-  //   final contractAbi = ContractAbi.fromJson(jsonEncode(abiString), "MyContract");
-  //
-  //   _contract = DeployedContract(
-  //     contractAbi,
-  //     EthereumAddress.fromHex(_contractAddress),
-  //   );
-  //
-  // }
-   Future<void> _loadContract() async {
-     try {
-       final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
-       // final abiJson = jsonDecode(abiString) as List<dynamic>;
-       //
-       // // final contractAbi = ContractAbi.fromJson(jsonEncode(abiJson), "MyContract");
-       //   final contractAbi = ContractAbi.fromJson(jsonEncode(abiString), "Token"); ///
-
-
-       // // If MyContract.json is a pure array (most likely):
-       //  final contractAbi = ContractAbi.fromJson(abiString, "Token");
-        final contractAbi = ContractAbi.fromJson(abiString, "Tether USD");
-
-       _contract = DeployedContract(
-         contractAbi,
-         EthereumAddress.fromHex(_contractAddress),
-       );
-       print('Contract loaded successfully');
-     } catch (e) {
-       print('Error loading contract: $e');
-       rethrow;
-     }
-   }
-
-  //  Future<void>_fetchDetails()async{
-  //   print('[DEBUG] Starting contract calls...');
-  //   print('Contract address: $_contractAddress');
-  //   print('Wallet ID: $_walletId');
-  //   final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId!);
-  //
-  //   if (_contract == null || _web3client == null || walletId == null){
-  //     print("Contract, client, or wallet ID not initialized");
-  //     return;
-  //   }
-  //
-  //   try{
-  //     final nameFunction = _contract!.function("name");
-  //     final symbolFunction = _contract!.function("symbol");
-  //     final balanceFunction = _contract!.function("balanceOf");
-  //
-  //     print('[DEBUG] Calling "name" function...');
-  //
-  //     final nameResult = await _web3client!.call(
-  //       contract: _contract!,
-  //       function: nameFunction,
-  //       params: [],
-  //     );
-  //     _name = nameResult.first as String;
-  //     print('Name: $_name');
-  //     print('[DEBUG] Name result: $nameResult');
-  //
-  //     print('[DEBUG] Calling "symbol" function...');
-  //     final symbolResult = await _web3client!.call(
-  //       contract: _contract!,
-  //       function: symbolFunction,
-  //       params: [],
-  //     );
-  //     _symbol = symbolResult.first as String;
-  //     print('Symbol: $_symbol');
-  //     print('[DEBUG] Symbol result: $symbolResult');
-  //
-  //     print('[DEBUG] Calling "balanceOf" function...');
-  //     final balanceResult = await _web3client!.call(
-  //       contract: _contract!,
-  //       function: balanceFunction,
-  //       params: [_publicAddress!],
-  //       // params: [EthereumAddress.fromHex(walletId!)]
-  //     );
-  //     _balanace = balanceResult.first as BigInt;
-  //     print('Balance: $_balanace');
-  //     print('[DEBUG] Balance result: $balanceResult');
-  //
-  //
-  //     // _name = nameResult[0] as String;
-  //     // _symbol = symbolResult[0] as String;
-  //     // _balanace = balanceResult[0] as BigInt;
-  //     // notifyListeners();
-  //
-  //   }catch (e, stacktrace){
-  //     print("Error fetching details: $e");
-  //     print('[STACKTRACE] $stacktrace');
-  //
-  //   }
-  //   notifyListeners();
-  //
-  // }
-
-
    Future<void>_fetchDetails()async{
-     print('[DEBUG] Starting contract calls...');
-     print('Contract address: $_contractAddress');
-     print('Wallet ID: $_walletId');
-     final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId!);
 
-     if (_contract == null || _web3client == null || walletId == null){
-       print("Contract, client, or wallet ID not initialized");
-       return;
-     }
-
+     _isFetchingDetails = true;
+     notifyListeners();
      try{
+       print('[DEBUG] Starting contract calls...');
+       print('Wallet ID: $_walletId');
+       // final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+       // final abiJson = jsonDecode(abiString);
+       //
+       // final myContract = DeployedContract(
+       //   ContractAbi.fromJson(jsonEncode(abiJson), "MyContract"),
+       //   EthereumAddress.fromHex("0x298f3EF46F26625e709c11ca2e84a7f34489C71d"),
+       // );
 
-       print('[DEBUG] Calling "name" function...');
-       final decimals = await _appKitModal.requestReadContract(
-         topic: _appKitModal.session!.topic,
-         chainId: chainId!,
-         deployedContract: _contract!,
-         functionName: 'decimals',
+
+       if (_appKitModal.session == null || _walletId == null) {
+         throw Exception('Session or wallet ID is null');
+       }
+
+
+       final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+       final abiJson = jsonDecode(abiString) as List<dynamic>;
+       // final abiJson = jsonDecode(abiString);
+
+       final myContract = DeployedContract(
+           ContractAbi.fromJson(
+             jsonEncode(abiJson), 'MyContract',),
+             EthereumAddress.fromHex('0x298f3EF46F26625e709c11ca2e84a7f34489C71d'),
        );
 
-       final balanceOf = await _appKitModal.requestReadContract(
-         deployedContract: _contract!,
-         topic: _appKitModal.session!.topic,
-         chainId: chainId!,
-         functionName: 'balanceOf',
-         parameters: [
-           EthereumAddress.fromHex(_appKitModal.session!.getAddress(namespace)!),
+        final chainId = _appKitModal.selectedChain!.chainId;
+       print("Chain ID: $chainId");
 
-         ],
-       );
-       print("Address: ${_appKitModal.session!.getAddress(namespace)}");
+       final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
+       // final userAddress = EthereumAddress.fromHex(
+       //   _appKitModal.session!.getAddress(namespace)!,
+       //   // _appKitModal.session!.getAddress(namespace).toString(),
+       // );
+       final addressHex = _appKitModal.session?.getAddress(namespace);
+       if (addressHex == null || addressHex.length < 42) {
+         debugPrint('[ERROR] Invalid user address: $addressHex');
+         return;
+       }
+       // final userAddress = EthereumAddress.fromHex(addressHex);
 
-       final totalSupply = await _appKitModal.requestReadContract(
-         deployedContract: _contract!,
-         topic: _appKitModal.session!.topic,
-         chainId: _appKitModal.selectedChain!.chainId,
-         functionName: 'totalSupply',
-       );
+       EthereumAddress? userAddress;
+       try {
+         userAddress = EthereumAddress.fromHex(addressHex);
+       } catch (e) {
+         debugPrint('[ERROR] Failed to parse user address: $e, Raw address: $addressHex');
+         return;
+       }
+       print("User Address: $userAddress");
 
-       print("Decimals: $decimals");
-       _decimals = decimals.first.toInt();
-       print("Balance: $balanceOf");
-       _balanace = balanceOf.first as BigInt;
-       print("Total Supply: $totalSupply");
-       _totalSupply = totalSupply.first as BigInt;
+
+       // final decimals = await _appKitModal.requestReadContract(
+       //   deployedContract: myContract,
+       //   topic: _appKitModal.session!.topic,
+       //   chainId: chainId,
+       //   functionName: 'decimals',
+       // );
+       // int? fetchedDecimals;
+       //
+       // print('[DEBUG] Decimals Result: $decimals (${decimals.runtimeType})');
+       //
+       // if (decimals.isNotEmpty && decimals.first != null) {
+       //   fetchedDecimals = decimals.first is BigInt
+       //       ? (decimals.first as BigInt).toInt()
+       //       : decimals.first as int?;
+       //   print('[DEBUG] Parsed Decimals: $_decimals');
+       // } else {
+       //   print('[ERROR] Decimals returned empty list');
+       //   _decimals = null;
+       // }
+       //
+       //
+       //
+       //
+       // final balanceOf = await _appKitModal.requestReadContract(
+       //   deployedContract: myContract,
+       //   topic: _appKitModal.session!.topic,
+       //   chainId: chainId,
+       //   functionName: 'balanceOf',
+       //   parameters: [userAddress],
+       //
+       // );
+       // BigInt? fetchedBalance;
+       //
+       // print('[DEBUG] BalanceOf Result: $balanceOf (${balanceOf.runtimeType})');
+       // if (balanceOf.isNotEmpty && balanceOf.first != null) {
+       //   fetchedBalance = balanceOf.first as BigInt?;
+       //   print('[DEBUG] Parsed Balance: $_balanace');
+       // } else {
+       //   print('[ERROR] BalanceOf returned empty list');
+       //   _balanace = null;
+       // }
+       //
+       //
+       //
+       // final totalSupply = await _appKitModal.requestReadContract(
+       //     topic: _appKitModal.session!.topic,
+       //     chainId: chainId,
+       //     deployedContract: myContract,
+       //     functionName: 'totalSupply'
+       // );
+       // BigInt? fetchedTotalSupply;
+       //
+       // print('[DEBUG] TotalSupply Result: $totalSupply (${totalSupply.runtimeType})');
+       // if (totalSupply.isNotEmpty && totalSupply.first != null) {
+       //   fetchedTotalSupply = totalSupply.first as BigInt?;
+       //   print('[DEBUG] Parsed Total Supply: $_totalSupply');
+       // } else {
+       //   print('[ERROR] TotalSupply returned empty list');
+       //   _totalSupply = null;
+       // }
+
+       // Fetch contract details
+       final results = await Future.wait([
+         _appKitModal.requestReadContract(
+           deployedContract: myContract,
+           topic: _appKitModal.session!.topic,
+            chainId: chainId,
+           functionName: 'decimals',
+
+         ),
+         _appKitModal.requestReadContract(
+           deployedContract: myContract,
+           topic: _appKitModal.session!.topic,
+           chainId: chainId,
+           functionName: 'balanceOf',
+           parameters: [userAddress],
+           // parameters: [EthereumAddress.fromHex(_appKitModal.session!.getAddress(namespace).toString()),],
+         ),
+         _appKitModal.requestReadContract(
+           deployedContract: myContract,
+           topic: _appKitModal.session!.topic,
+           chainId: chainId,
+           functionName: 'totalSupply',
+
+
+         ),
+       ]);
+
+
+
+       _decimals = (results[0].isNotEmpty && results[0].first != null)
+           ? (results[0].first is BigInt
+           ? (results[0].first as BigInt).toInt()
+           : results[0].first as int)
+           : null;
+
+       _balanace = (results[1].isNotEmpty && results[1].first != null) ? results[1].first as BigInt : null;
+
+       _totalSupply = (results[2].isNotEmpty && results[2].first != null) ? results[2].first as BigInt : null;
+      /**  **/
+
+        _walletDataController.add(WalletData(
+                 balance: _formatBalance(_balanace, _decimals),
+             decimals: _decimals.toString(),
+                totalSupply: _formatBalance(_totalSupply, _decimals),
+             ));
+
+
+
+
 
        notifyListeners();
 
-     }catch (e, stacktrace){
-       print("Error fetching details: $e");
-       print('[STACKTRACE] $stacktrace');
+     }catch (e){
+       _walletDataController.addError(e);
+       print("[ERROR] fetching contract details failed:  $e");
 
+
+     }finally{
+       // _walletDataController.add(WalletData(
+       //   balance: _formatBalance(_balanace, _decimals),
+       //   decimals: _decimals.toString(),
+       //
+       //   totalSupply: _formatBalance(_totalSupply, _decimals),
+       // ));
+       _isFetchingDetails = false;
+       notifyListeners();
      }
-     notifyListeners();
+
+
 
    }
 
-
-
-  Future<String> transfer(String toAddress, BigInt amount)async{
-    if(_contract == null || _credentials == null){
-      throw Exception("Contract,credentials or Wallet not initialized");
+  Future<void> waitForSession({Duration timeout = const Duration(seconds: 5)}) async {
+    DateTime startTime = DateTime.now();
+    while (DateTime.now().difference(startTime) < timeout) {
+      if (_appKitModal.session != null && _walletId != null) {
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 200));
     }
-
-    final transferFunction = _contract!.function("transfer");
-
-    final txHash = await _web3client!.sendTransaction(
-      _credentials!,
-      Transaction.callContract(
-        contract: _contract!,
-        function: transferFunction,
-        parameters: [EthereumAddress.fromHex(toAddress),amount],
-      ),
-
-      // chainId: 11155111, // Sepolia chain ID
-      chainId: _appKitModal.selectedChain!.chainId.toInt(), // Sepolia chain ID
-    );
-
-    //reFetch balance after transfer
-    await _fetchDetails();
-    notifyListeners();
-
-    return txHash;
-
-
+    debugPrint('[WARNING] Timeout waiting for session and wallet ID.');
   }
 
+  String _formatBalance(BigInt? raw, int? decimals) {
+    if (raw == null || decimals == null) return 'N/A';
+    final divisor = BigInt.from(10).pow(decimals);
+    final balance = raw / divisor;
+    return balance.toString();
+  }
+  // String _formatBalance(BigInt? raw, int? decimals) {
+  //   if (raw == null || decimals == null) return 'N/A';
+  //
+  //   try {
+  //     // Convert to double for proper division
+  //     final rawDouble = raw.toDouble();
+  //     final divisor = pow(10, decimals).toDouble();
+  //     final result = rawDouble / divisor;
+  //
+  //     // Format to show up to 6 decimal places
+  //     return result.toStringAsFixed(6).replaceAll(RegExp(r'\.?0*$'), '');
+  //   } catch (e) {
+  //     debugPrint('Error formatting balance: $e');
+  //     return 'N/A';
+  //   }
+  // }
+
+  @override
+  void dispose() {
+    _walletDataController.close();
+    super.dispose();
+  }
 
 }
+
+
+// Future<String> transfer(String toAddress, BigInt amount)async{
+//   if(_contract == null || _credentials == null){
+//     throw Exception("Contract,credentials or Wallet not initialized");
+//   }
+//
+//   final transferFunction = _contract!.function("transfer");
+//
+//   final txHash = await _web3client!.sendTransaction(
+//     _credentials!,
+//     Transaction.callContract(
+//       contract: _contract!,
+//       function: transferFunction,
+//       parameters: [EthereumAddress.fromHex(toAddress),amount],
+//     ),
+//
+//     // chainId: 11155111, // Sepolia chain ID
+//     chainId: _appKitModal.selectedChain!.chainId.toInt(), // Sepolia chain ID
+//   );
+//
+//   //reFetch balance after transfer
+//   // await _fetchDetails();
+//   notifyListeners();
+//
+//   return txHash;
+//
+//
+// }

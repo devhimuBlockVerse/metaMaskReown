@@ -7,105 +7,154 @@ import 'home_view.dart';
 import '../viewmodel/wallet_view_model2.dart';
 
 
-class DashboardView extends StatelessWidget {
+
+class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final walletVM = Provider.of<WalletViewModel>(context);
-    return WillPopScope(
-      onWillPop: () async { return false;  },
-      child: Scaffold(
-        backgroundColor: Color(0xFA525AE8),
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          title: const Text(
-            'Wallet Dashboard',
-            style: TextStyle(fontWeight: FontWeight.bold ,color: Colors.white),
-          ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              color: Colors.white,
-              onPressed: () async {
-                await walletVM.disconnectWallet();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeView()),
-                );
-              },
-            ),
-            // IconButton(
-            //   color: Colors.white,
-            //   icon: const Icon(Icons.refresh),
-            //   onPressed: () => walletVM.fetchBalance(),
-            // ),
-          ],
-        ),
-        body:walletVM.isConnected
-            ? Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                padding: const EdgeInsets.all(25),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                  ),
-                ),
+  State<DashboardView> createState() => _DashboardViewState();
+}
 
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.account_balance_wallet_rounded,
-                        size: 60, color: Colors.white),
-                    const SizedBox(height: 20),
-                    Text(
-                      walletVM.userName != null
-                          ? 'Welcome, ${walletVM.userName}'
-                          : 'Wallet Not Connected',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+class _DashboardViewState extends State<DashboardView> {
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final walletVM = Provider.of<WalletViewModel>(context, listen: false);
+  //     if (walletVM.isConnected) {
+  //       walletVM.initWallet();
+  //     }
+  //   });
+  // }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final walletVM = Provider.of<WalletViewModel>(context, listen: false);
+      if (walletVM.isConnected) {
+        // Ensure session is ready before calling initWallet
+        await walletVM.waitForSession();
+        walletVM.initWallet();
+
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Consumer<WalletViewModel>(
+        builder: (context, walletVM, child) {
+          return Scaffold(
+            backgroundColor: const Color(0xFA525AE8),
+            appBar: AppBar(
+              backgroundColor: Colors.black,
+              elevation: 0,
+              title: const Text(
+                'Wallet Dashboard',
+                style:
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  color: Colors.white,
+                  onPressed: () async {
+                    await walletVM.disconnectWallet();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeView()),
+                    );
+                  },
+                ),
+              ],
+            ),
+            body: walletVM.isConnected
+                ? StreamBuilder<WalletData>(
+              stream: walletVM.walletDataStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final walletData = snapshot.data ?? WalletData();
+
+                return Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        padding: const EdgeInsets.all(25),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                                Icons.account_balance_wallet_rounded,
+                                size: 60,
+                                color: Colors.white),
+                            const SizedBox(height: 20),
+                            Text(
+                              walletVM.userName != null
+                                  ? 'Welcome, ${walletVM.userName}'
+                                  : 'Wallet Not Connected',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Divider(color: Colors.white.withOpacity(0.3)),
+                            const SizedBox(height: 10),
+                            _buildInfoRow('Wallet ID',
+                                walletVM.walletId ?? 'Not Connected'),
+                            const SizedBox(height: 10),
+                            _buildInfoRow(
+                                'User Balance',
+                                walletData.balance ?? 'Loading...'),
+                            const SizedBox(height: 10),
+                            _buildInfoRow('Token Decimals',
+                                walletData.decimals ?? 'Loading...'),
+                            const SizedBox(height: 10),
+                            _buildInfoRow('Total Supply',
+                                walletData.totalSupply ?? 'Loading...'),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Divider(color: Colors.white.withOpacity(0.3)),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Wallet ID', walletVM.walletId ?? 'Not Connected'),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Decimals', '${walletVM.decimals  }'),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Symbol', '${walletVM.symbol }'),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Balance', '${walletVM.balance }'),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Decimals', '${walletVM.decimals }'),
-
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Symbol', '${walletVM.symbol }'),
-
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Address', '${walletVM.publicAddress }'),
-
-                  ],
-                ),
+                  ),
+                );
+              },
+            )
+                : Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final walletVM =
+                  Provider.of<WalletViewModel>(context, listen: false);
+                  await walletVM.connectWallet();
+                },
+                child: const Text('Connect Wallet'),
               ),
             ),
-          ),
-        ) : Center(
-          child: ElevatedButton(onPressed: () => walletVM.initWallet(),
-              child: Text("Connect Wallet"),
-          ),
-        )
+          );
+        },
       ),
     );
   }
@@ -137,70 +186,4 @@ class DashboardView extends StatelessWidget {
       ],
     );
   }
-
-// child: Column(
-//   mainAxisSize: MainAxisSize.min,
-//   children: [
-//     Icon(Icons.account_balance_wallet_rounded,
-//         size: 60, color: Colors.white),
-//     const SizedBox(height: 20),
-//     Text(
-//       walletVM.userName != null
-//           ? 'Welcome, ${walletVM.userName}'
-//           : 'Wallet Not Connected',
-//       style: const TextStyle(
-//         fontSize: 22,
-//         fontWeight: FontWeight.bold,
-//         color: Colors.white,
-//       ),
-//     ),
-//     const SizedBox(height: 20),
-//     Divider(color: Colors.white.withOpacity(0.3)),
-//     const SizedBox(height: 10),
-//     _buildInfoRow('Wallet ID', walletVM.walletId ?? 'Not Connected'),
-//     const SizedBox(height: 10),
-//     _buildInfoRow('Balance', '${walletVM.balanceInEth} ETH'),
-//     const SizedBox(height: 20),
-//     _buildInfoRow('Chain ID', walletVM.chainId ?? 'N/A'),
-//     const SizedBox(height: 20),
-//     _buildInfoRow('Network', '${walletVM.networkName ?? 'N/A'}'),
-//     const SizedBox(height: 20),
-//     _buildInfoRow('Blockchain Identity', '${walletVM.blockchainIdentity ?? 'N/A'}'),
-//     const SizedBox(height: 20),
-//
-//     // ElevatedButton.icon(
-//     //     onPressed: ()async{
-//     //       await walletVM.getUserDataFromContract();
-//     //     },
-//     //     icon: const Icon(Icons.data_object),
-//     //     label: const Text('Get user Contract Data')
-//     // ),
-//     // if(walletVM.userData != null) ...[
-//     //   const SizedBox(height: 15),
-//     //   _buildInfoRow("Contract Data", walletVM.userData!),
-//     //
-//     // ],
-//
-//     const SizedBox(height: 20),
-//
-//     ElevatedButton.icon(
-//       onPressed: walletVM.isLoading
-//           ? null
-//           : () => walletVM.fetchBalance(),
-//       style: ElevatedButton.styleFrom(
-//         backgroundColor: Colors.deepPurple,
-//         padding: const EdgeInsets.symmetric(
-//             vertical: 12, horizontal: 20),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(20),
-//         ),
-//       ),
-//       icon: const Icon(Icons.refresh,color: Colors.white,),
-//       label: Text(
-//         walletVM.isLoading ? 'Refreshing...' : 'Refresh Balance',
-//         style: const TextStyle(fontSize: 16,color: Colors.white),
-//       ),
-//     ),
-//   ],
-// ),
-}
+  }

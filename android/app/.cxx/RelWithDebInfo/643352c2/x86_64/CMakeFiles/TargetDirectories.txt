@@ -1,0 +1,2 @@
+/Volumes/Project/reown_appkit_wallet_flutter/android/app/.cxx/RelWithDebInfo/643352c2/x86_64/CMakeFiles/edit_cache.dir
+/Volumes/Project/reown_appkit_wallet_flutter/android/app/.cxx/RelWithDebInfo/643352c2/x86_64/CMakeFiles/rebuild_cache.dir
