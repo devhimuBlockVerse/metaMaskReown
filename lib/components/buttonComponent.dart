@@ -39,14 +39,14 @@ import 'package:flutter/material.dart';
 class ReownAppKitButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback ?onPressed;
   final Color? color;
 
   const ReownAppKitButton({
     super.key,
     required this.label,
     required this.icon,
-    required this.onPressed,
+     this.onPressed,
     this.color,
   });
 
