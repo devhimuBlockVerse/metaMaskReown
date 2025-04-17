@@ -6,16 +6,6 @@ import 'package:reown_appkit/reown_appkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
 
-class WalletData {
-  final String? balance;
-  final String? decimals;
-  final String? totalSupply;
-
-  WalletData(
-      {this.balance,
-      this.decimals,
-      this.totalSupply});
-}
 
 class WalletViewModel extends ChangeNotifier {
   late ReownAppKitModal appKitModal;
@@ -206,7 +196,6 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-
   Future<String> getTotalSupply() async {
     if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
       throw Exception("Wallet not Connected");
@@ -239,6 +228,7 @@ class WalletViewModel extends ChangeNotifier {
           chainId: appKitModal.selectedChain!.chainId,
           deployedContract: tetherContract,
           functionName: 'decimals');
+
       final tokenDecimals = (decimals[0] as BigInt).toInt();
       final totalSupply = totalSupplyResult[0] as BigInt;
       final divisor = BigInt.from(10).pow(tokenDecimals);
@@ -255,6 +245,78 @@ class WalletViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+
+  Future<void> transferToken() async{
+    if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
+      throw Exception("Wallet not Connected");
+    }
+
+    try{
+      _isLoading = true;
+      notifyListeners();
+
+      final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+      final abiData = jsonDecode(abiString);
+
+      final tetherContract = DeployedContract(
+        ContractAbi.fromJson(
+          jsonEncode(abiData),
+          'eCommerce Coin',
+        ),
+        EthereumAddress.fromHex(
+            '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),
+      );
+
+      final decimals = await appKitModal!.requestReadContract(
+          topic: appKitModal!.session!.topic,
+          chainId: appKitModal!.selectedChain!.chainId,
+          deployedContract: tetherContract,
+          functionName: 'decimals');
+
+
+      final decimalUnits = (decimals.first as BigInt);
+      final transferValue = _formatValue(0.23, decimals: decimalUnits);
+      final chainID = appKitModal!.selectedChain!.chainId;
+      final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+
+
+      final result = await appKitModal!.requestWriteContract(
+          topic: appKitModal!.session!.topic,
+          chainId: chainID,
+          deployedContract: tetherContract,
+          functionName: 'transfer',
+          transaction: Transaction(
+            from: EthereumAddress.fromHex(appKitModal!.session!.getAddress(nameSpace)!)
+          ),
+        parameters: [
+          EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
+        ]
+      );
+
+      print('Transfer Result: $result');
+
+
+    }catch(e){
+      print('Error Sending transferToken: $e');
+      rethrow;
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+
+
+  }
+
+
+
+
+  /// Mock function to format decimal value to token unit (BigInt)
+  BigInt _formatValue(double amount, {required BigInt decimals}) {
+    final decimalPlaces = decimals.toInt(); // e.g., 6 for USDT, 18 for ETH
+    final factor = BigInt.from(10).pow(decimalPlaces);
+    return BigInt.from(amount * factor.toDouble());
   }
 
 }
