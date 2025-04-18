@@ -30,6 +30,7 @@ class _DashboardViewState
   final TextEditingController _recipientController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
 
+  bool _isloading = false;
 
 
   @override
@@ -66,9 +67,9 @@ class _DashboardViewState
 
                 return Center(
                   child: model.isConnected
-                      ? Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
+                      ? SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -113,7 +114,7 @@ class _DashboardViewState
                               try {
                                 final balance = await model.getBalance();
                                 final totalSupply = await model.getTotalSupply();
-
+                        
                                 if (context.mounted) {
                                   showDialog(
                                     context: context,
@@ -180,11 +181,14 @@ class _DashboardViewState
                               style: TextStyle(fontSize: 18),
                             ),
                           ),
-
+                        
                         ),
+                        
+                        /// Transfer Token Section
                         const SizedBox(height: 16),
                         TextField(
                           controller: _recipientController,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             labelText: 'Recipient Address',
@@ -192,49 +196,58 @@ class _DashboardViewState
                         ),
                         const SizedBox(height: 16),
                         TextField(
+
                           controller: _amountController,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             labelText: 'Amount to Transfer',
                           ),
                         ),
                         const SizedBox(height: 16),
-
+                        
                         SizedBox(
                           width: 240,
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: ()async{
+                            onPressed: _isloading? null : ()async{
                               final recipient = _recipientController.text;
                               final amountText = _amountController.text;
                               final amount = double.tryParse(amountText);
-                              if (amount == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                    Text('Please enter a valid amount'),
-                                    backgroundColor: Colors.red,
-                                  ),
+
+                              if(recipient.isEmpty || amountText.isEmpty){
+                                _showSnackBar(
+                                  context, "Please fill out all fields", isError: true,
                                 );
                                 return;
                               }
+
+                              if (amount == null) {
+                                _showSnackBar(
+                                  context, "Please enter a valid amount", isError: true,
+                                );
+                                return;
+                              }
+                              setState(() => _isloading = true);
                               try{
                                 await model.transferToken(recipient, amount);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Token transferred successfully!')),
-                                );
+                                _showSnackBar(context, 'Token transferred successfully!');
+                                _recipientController.clear();
+                                _amountController.clear();
 
                               }catch(e){
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error sending token: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
+                                  _showSnackBar(
+                                    context,
+                                    'Error sending token: ${e.toString()}',
+                                    isError: true,
                                   );
+                                  print("Error sending token: $e");
                                 }
+                              }finally{
+                                if (mounted) setState(() => _isloading = false);
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -248,12 +261,12 @@ class _DashboardViewState
                               'Transfer Token',
                               style: TextStyle(fontSize: 18),
                             ),
-
+                        
                           )
                         ),
-
-
-
+                        
+                        
+                        
                         const SizedBox(height: 16),
                         SizedBox(
                           width: 240,
@@ -286,8 +299,8 @@ class _DashboardViewState
                             ),
                           ),
                         ),
-                                            ],
-                                          ),
+                          ],
+                        ),
                       )
                       : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -362,6 +375,15 @@ class _DashboardViewState
       return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
     }
     return address;
+  }
+
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
 }

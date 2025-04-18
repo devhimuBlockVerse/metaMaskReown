@@ -30,14 +30,13 @@ class WalletViewModel extends ChangeNotifier {
       projectId:
           'f3d7c5a3be3446568bcc6bcc1fcc6389',
       metadata: const PairingMetadata(
-        name: "Example App",
+        name: "MyWallet",
         description: "Example Description",
         url: 'https://example.com/',
         icons: ['https://example.com/logo.png'],
         redirect: Redirect(
           native: 'exampleapp',
-          universal:
-              'https://reown.com/exampleapp',
+          universal: 'https://reown.com/exampleapp',
           linkMode: true,
         ),
       ),
@@ -71,13 +70,83 @@ class WalletViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    appKitModal.onModalUpdate.subscribe((ModalConnect? event){
+      print("Modal Update ; ${event.toString()}");
+
+      if(event != null && event.session != null){
+        _isConnected = true;
+
+        final chainId =  appKitModal.selectedChain?.chainId;
+        if(chainId != null){
+          final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
+          final updatedAddress = event.session!.getAddress(namespace);
+
+          if(updatedAddress != null && updatedAddress != _walletAddress){
+            _walletAddress = updatedAddress;
+            print("Modal Update - New Wallet Address: $_walletAddress");
+
+          }
+        }
+      }else{
+        _isConnected = false;
+        _walletAddress = '';
+        print("Modal Update - Session cleared or null");
+
+      }
+
+      notifyListeners();
+    });
+
     appKitModal!.onModalDisconnect.subscribe((_) {
       _isConnected = false;
       _walletAddress = '';
       notifyListeners();
     });
 
+    appKitModal!.onSessionExpireEvent.subscribe((event){
+      print("Session expired: ${event?.topic}");
+      _isConnected = false;
+      _walletAddress = '';
+      notifyListeners();
+    });
+
+    appKitModal!.onSessionUpdateEvent.subscribe((event)async{
+      print("Session Update : ${event?.topic}");
+      //Update UI or Reload accounts/balance
+
+      final chainId = appKitModal!.selectedChain!.chainId;
+      final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
+      final updateAddress = appKitModal.session!.getAddress(namespace)!;
+
+      if(appKitModal!.session != null && updateAddress != _walletAddress ){
+        _walletAddress = updateAddress;
+        print("Updated New Wallet Address: $_walletAddress");
+      }
+
+      try{
+        final balance = await getBalance();
+        print("Updated new Balance : $balance");
+      }catch(e){
+        print("Failed to refresh balance: $e");
+      }
+      _isConnected= false;
+       notifyListeners();
+
+    });
+
+
+
     await appKitModal.init();
+
+    if(appKitModal.session != null){
+      _isConnected = true;
+      final chainId = appKitModal!.selectedChain!.chainId;
+      if(chainId != null){
+        final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
+        _walletAddress = appKitModal.session!.getAddress(namespace)!;
+      }
+    }
+
 
 
     _isLoading = false;
@@ -253,11 +322,13 @@ class WalletViewModel extends ChangeNotifier {
      if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
       throw Exception("Wallet not Connected");
     }
-    _isLoading = true;
-    notifyListeners();
 
     try{
-      final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+
+       _isLoading = true;
+       notifyListeners();
+
+    final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
       final abiData = jsonDecode(abiString);
 
       final tetherContract = DeployedContract(
@@ -284,8 +355,13 @@ class WalletViewModel extends ChangeNotifier {
       final decimalUnits = (decimals.first as BigInt);
       final transferValue = _formatValue(amount, decimals: decimalUnits);
 
-      final metamaskUri = Uri.parse('https://metamask.app.link/dapp/https://reown.com/exampleapp');
-      await launchUrl(metamaskUri, mode: LaunchMode.externalApplication);
+      // final deeplink = Uri.parse('https://metamask.app.link/send?to=$recipientAddress&value=${BigInt.from(amount * 1e18).toRadixString(16)}',);
+        await launchUrl(deeplink, mode: LaunchMode.externalApplication);
+       final metaMaskUrl = Uri.parse(
+         'metamask://dapp/exampleapp',
+       );
+       await launchUrl(metaMaskUrl, mode: LaunchMode.externalApplication);
+
       await Future.delayed(Duration(seconds: 2));
 
       final result = await appKitModal!.requestWriteContract(
@@ -296,23 +372,18 @@ class WalletViewModel extends ChangeNotifier {
           transaction: Transaction(
             from: EthereumAddress.fromHex(appKitModal!.session!.getAddress(nameSpace)!)
           ),
-        parameters: [
-          EthereumAddress.fromHex(recipientAddress),transferValue,
+        parameters: [ EthereumAddress.fromHex(recipientAddress),transferValue,
           // EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
         ]
       );
 
-
       print('Transfer Result: $result');
       print('runtimeType: ${result.runtimeType}');
-
-
 
       return result;
 
     }catch(e){
       print('Error Sending transferToken: $e');
-
       rethrow;
     }finally{
       _isLoading = false;
@@ -333,3 +404,10 @@ class WalletViewModel extends ChangeNotifier {
   }
 
 }
+// final metamaskUri = Uri.parse('https://metamask.app.link/dapp/https://reown.com/exampleapp');
+// final metamaskUri = Uri.parse('https://reown.com/exampleapp');
+// // final metamaskUri = Uri.parse('https://metamask.app.link/dapp/exampleapp');
+// await launchUrl(metamaskUri, mode: LaunchMode.externalApplication);
+
+// final deeplink = Uri.parse('https://metamask.app.link/send?to=$recipientAddress&value=${BigInt.from(amount * 1e18).toRadixString(16)}',);
+// await launchUrl(deeplink, mode: LaunchMode.externalApplication);

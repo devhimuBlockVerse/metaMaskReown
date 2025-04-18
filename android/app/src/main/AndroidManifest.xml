@@ -47,7 +47,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="exampleapp"
-                     />
+                    android:host="callback"/>
             </intent-filter>
 
         </activity>
