@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import 'package:reown_appkit_wallet_flutter/view/dashboard.dart';
+import 'package:reown_appkit_wallet_flutter/view/demo.dart';
  import 'package:reown_walletkit/reown_walletkit.dart';
 // import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
 import 'dart:ui';
@@ -37,7 +38,8 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
           useMaterial3: true,
         ),
-        home: const DashboardView(),
+        // home: const DashboardView(),
+        home:  DemoScreen(),
        ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
@@ -356,11 +357,14 @@ class WalletViewModel extends ChangeNotifier {
       final transferValue = _formatValue(amount, decimals: decimalUnits);
 
       // final deeplink = Uri.parse('https://metamask.app.link/send?to=$recipientAddress&value=${BigInt.from(amount * 1e18).toRadixString(16)}',);
-        await launchUrl(deeplink, mode: LaunchMode.externalApplication);
+      //   await launchUrl(deeplink, mode: LaunchMode.externalApplication);
        final metaMaskUrl = Uri.parse(
          'metamask://dapp/exampleapp',
        );
-       await launchUrl(metaMaskUrl, mode: LaunchMode.externalApplication);
+       await launchUrl(
+           metaMaskUrl,
+           // mode: LaunchMode.externalApplication
+       );
 
       await Future.delayed(Duration(seconds: 2));
 
@@ -384,6 +388,16 @@ class WalletViewModel extends ChangeNotifier {
 
     }catch(e){
       print('Error Sending transferToken: $e');
+      Fluttertoast.showToast(
+          msg: "Error: ${e.toString()}",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
+
       rethrow;
     }finally{
       _isLoading = false;

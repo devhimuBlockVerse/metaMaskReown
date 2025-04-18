@@ -1,10 +1,9 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:reown_appkit/reown_appkit.dart';
 
 import '../viewmodel/wallet_view_model2.dart';
 
@@ -16,11 +15,13 @@ class DashboardView extends StatefulWidget {
       _DashboardViewState();
 }
 
-class _DashboardViewState
-    extends State<DashboardView> {
+class _DashboardViewState extends State<DashboardView> {
+
+
   @override
   void initState() {
     super.initState();
+
 
     Future.microtask(() =>
         Provider.of<WalletViewModel>(context,listen: false).init(context)
@@ -33,10 +34,12 @@ class _DashboardViewState
   bool _isloading = false;
 
 
+
+
   @override
   void dispose() {
      super.dispose();
-    _recipientController.dispose();
+      _recipientController.dispose();
     _amountController.dispose();
   }
 
@@ -218,34 +221,29 @@ class _DashboardViewState
                               final amount = double.tryParse(amountText);
 
                               if(recipient.isEmpty || amountText.isEmpty){
-                                _showSnackBar(
-                                  context, "Please fill out all fields", isError: true,
-                                );
+                                _showToast('Please fill out all fields', isError: true);
+
                                 return;
                               }
 
                               if (amount == null) {
-                                _showSnackBar(
-                                  context, "Please enter a valid amount", isError: true,
-                                );
+                                _showToast('Please enter a valid amount', isError: true);
+
                                 return;
                               }
                               setState(() => _isloading = true);
                               try{
                                 await model.transferToken(recipient, amount);
-                                _showSnackBar(context, 'Token transferred successfully!');
+                                _showToast('Token transferred successfully!');
                                 _recipientController.clear();
                                 _amountController.clear();
 
                               }catch(e){
-                                if (context.mounted) {
-                                  _showSnackBar(
-                                    context,
-                                    'Error sending token: ${e.toString()}',
-                                    isError: true,
-                                  );
-                                  print("Error sending token: $e");
-                                }
+
+                                _showToast('Error sending token: ${e.toString()}', isError: true);
+
+                                print("Error sending token: $e");
+
                               }finally{
                                 if (mounted) setState(() => _isloading = false);
                               }
@@ -377,14 +375,21 @@ class _DashboardViewState
     return address;
   }
 
-  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
+  void _showToast(String message, {bool isError = false}) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: isError
+          ? Colors.red
+          : Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
     );
   }
+
+
 
 }
 
