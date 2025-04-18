@@ -24,7 +24,7 @@ class _DemoScreenState extends State<DemoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black12,
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -48,52 +48,54 @@ class _DemoScreenState extends State<DemoScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Column(
                   children: [
-
-                    CustomInputField(
-                      hintText: 'ECM Amount',
-                      iconAssetPath: 'assets/icons/ecm.png',
-                      controller: ecmController,
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    CustomInputField(
-                      hintText: 'USDT Payable',
-                      iconAssetPath: 'assets/icons/usdt.png',
-                      controller: usdtController,
-                    ),
-
-                    CustomButton(
-                      text: 'Buy with ETH',
-                      icon: 'assets/icons/eth.png',
-                      isActive: isETHActive,
-
-                      onPressed: () {
-                        setState(() {
-                          isETHActive = true;
-                          isUSDTActive = false;
-                        });
-                       },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    CustomButton(
-
-                      text: 'Buy with USDT',
-                      icon: 'assets/icons/usdt.png',
-                      isActive: isUSDTActive,
-                      onPressed: () {
-                        setState(() {
-                          isETHActive = false;
-                          isUSDTActive = true;
-                        });
-                      },
-                    ),
-
+                    //
+                    // CustomInputField(
+                    //   hintText: 'ECM Amount',
+                    //   iconAssetPath: 'assets/icons/ecm.png',
+                    //   controller: ecmController,
+                    // ),
+                    //
+                    // const SizedBox(height: 20),
+                    //
+                    // CustomInputField(
+                    //   hintText: 'USDT Payable',
+                    //   iconAssetPath: 'assets/icons/usdt.png',
+                    //   controller: usdtController,
+                    // ),
+                    // const SizedBox(height: 30),
+                    //
+                    // CustomButton(
+                    //   text: 'Buy with ETH',
+                    //   icon: 'assets/icons/eth.png',
+                    //   isActive: isETHActive,
+                    //
+                    //   onPressed: () {
+                    //     setState(() {
+                    //       isETHActive = true;
+                    //       isUSDTActive = false;
+                    //     });
+                    //    },
+                    // ),
+                    //
+                    // const SizedBox(height: 30),
+                    //
+                    // CustomButton(
+                    //
+                    //   text: 'Buy with USDT',
+                    //   icon: 'assets/icons/usdt.png',
+                    //   isActive: isUSDTActive,
+                    //   onPressed: () {
+                    //     setState(() {
+                    //       isETHActive = false;
+                    //       isUSDTActive = true;
+                    //     });
+                    //   },
+                    // ),
+                    //
+                    // const SizedBox(height: 30),
 
                     BuyEcmButton(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 30),
 
                     DisconnectButton(),
                   ],

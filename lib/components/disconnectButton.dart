@@ -5,38 +5,66 @@ class DisconnectButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(4),
-          topRight: Radius.circular(4),
-          bottomLeft: Radius.circular(8),
-          bottomRight: Radius.circular(8),
+    return ClipPath(
+      clipper: DisconnectButtonClipper(),
+      child: Container(
+        width: 320,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          border: Border.all(color: Colors.redAccent, width: 1.8),
         ),
-        border: Border.all(color: const Color(0xFFEF5350), width: 1.5),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Disconnect',
-            style: TextStyle(
-              color: Color(0xFFEF5350),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+        child: const Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Disconnect',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(Icons.volume_off, color: Colors.white),
+            ],
           ),
-          const SizedBox(width: 8),
-          Image.asset(
-            'assets/disconnect_icon.png', // Replace with your actual asset path
-            width: 20,
-            height: 20,
-            color: const Color(0xFFEF5350),
-          ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class DisconnectButtonClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const double notch = 10;
+    const double edge = 15;
+
+    final path = Path();
+
+    // Start top-left
+    path.moveTo(edge, 0);
+    path.lineTo(size.width - edge, 0);
+    path.lineTo(size.width, notch);
+    path.lineTo(size.width, size.height - notch);
+    path.lineTo(size.width - edge, size.height);
+
+    // Center notch
+    path.lineTo(size.width * 0.55, size.height);
+    path.lineTo(size.width * 0.53, size.height - notch);
+    path.lineTo(size.width * 0.47, size.height - notch);
+    path.lineTo(size.width * 0.45, size.height);
+
+    path.lineTo(edge, size.height);
+    path.lineTo(0, size.height - notch);
+    path.lineTo(0, notch);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
