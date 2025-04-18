@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3dart/web3dart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class WalletViewModel extends ChangeNotifier {
@@ -248,15 +249,14 @@ class WalletViewModel extends ChangeNotifier {
   }
 
 
-  Future<void> transferToken() async{
-    if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
+   Future<void> transferToken(String recipientAddress, double amount) async{
+     if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
       throw Exception("Wallet not Connected");
     }
+    _isLoading = true;
+    notifyListeners();
 
     try{
-      _isLoading = true;
-      notifyListeners();
-
       final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
       final abiData = jsonDecode(abiString);
 
@@ -269,18 +269,24 @@ class WalletViewModel extends ChangeNotifier {
             '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),
       );
 
+
+
+      final chainID = appKitModal!.selectedChain!.chainId;
+      final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+
       final decimals = await appKitModal!.requestReadContract(
           topic: appKitModal!.session!.topic,
-          chainId: appKitModal!.selectedChain!.chainId,
+          chainId: chainID,
           deployedContract: tetherContract,
           functionName: 'decimals');
 
 
       final decimalUnits = (decimals.first as BigInt);
-      final transferValue = _formatValue(0.23, decimals: decimalUnits);
-      final chainID = appKitModal!.selectedChain!.chainId;
-      final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+      final transferValue = _formatValue(amount, decimals: decimalUnits);
 
+      final metamaskUri = Uri.parse('https://metamask.app.link/dapp/https://reown.com/exampleapp');
+      await launchUrl(metamaskUri, mode: LaunchMode.externalApplication);
+      await Future.delayed(Duration(seconds: 2));
 
       final result = await appKitModal!.requestWriteContract(
           topic: appKitModal!.session!.topic,
@@ -291,15 +297,22 @@ class WalletViewModel extends ChangeNotifier {
             from: EthereumAddress.fromHex(appKitModal!.session!.getAddress(nameSpace)!)
           ),
         parameters: [
-          EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
+          EthereumAddress.fromHex(recipientAddress),transferValue,
+          // EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
         ]
       );
 
-      print('Transfer Result: $result');
 
+      print('Transfer Result: $result');
+      print('runtimeType: ${result.runtimeType}');
+
+
+
+      return result;
 
     }catch(e){
       print('Error Sending transferToken: $e');
+
       rethrow;
     }finally{
       _isLoading = false;

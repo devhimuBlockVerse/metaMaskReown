@@ -27,6 +27,18 @@ class _DashboardViewState
     );
   }
 
+  final TextEditingController _recipientController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+
+
+
+  @override
+  void dispose() {
+     super.dispose();
+    _recipientController.dispose();
+    _amountController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -52,159 +64,231 @@ class _DashboardViewState
                   );
                 }
 
-                // return Center(
-                //   child: model.isConnected
-                //       ? _buildConnectedView(model, context)
-                //       : _buildConnectedButton(model,context)
-                // );
                 return Center(
                   child: model.isConnected
-                      ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        size: 80,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Wallet Connected',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                        const Icon(
+                          Icons.check_circle,
+                          size: 80,
+                          color: Colors.green,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Wallet Connected',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                          child: Text(
-                            _formatAddress(model.walletAddress),
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'monospace',
-                                color: Colors.black
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _formatAddress(model.walletAddress),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'monospace',
+                                  color: Colors.black
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 48),
-                      SizedBox(
-                        width: 240,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            try {
-                              final balance = await model.getBalance();
-                              final totalSupply = await model.getTotalSupply();
+                        const SizedBox(height: 48),
+                        SizedBox(
+                          width: 240,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                final balance = await model.getBalance();
+                                final totalSupply = await model.getTotalSupply();
 
-                              if (context.mounted) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    // title: const Text('Your Balance'),
-                                    title: const Text('Wallet Information'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Your Balance:',
-                                          style: TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          balance,
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
+                                if (context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      // title: const Text('Your Balance'),
+                                      title: const Text('Wallet Information'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Your Balance:',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
                                           ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        const Text(
-                                          'Total Supply:',
-                                          style: TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          totalSupply,
-                                          style: const TextStyle(
-                                            fontSize: 20,
+                                          Text(
+                                            balance,
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
+                                          const SizedBox(height: 10),
+                                          const Text(
+                                            'Total Supply:',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            totalSupply,
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Close'),
                                         ),
                                       ],
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Close'),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error getting balance: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               }
-                            } catch (e) {
-                              if (context.mounted) {
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Show Balance',
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
+
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _recipientController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Recipient Address',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Amount to Transfer',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        SizedBox(
+                          width: 240,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: ()async{
+                              final recipient = _recipientController.text;
+                              final amountText = _amountController.text;
+                              final amount = double.tryParse(amountText);
+                              if (amount == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error getting balance: ${e.toString()}'),
+                                  const SnackBar(
+                                    content:
+                                    Text('Please enter a valid amount'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
+                                return;
                               }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Show Balance',
-                            style: TextStyle(fontSize: 18),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: 240,
-                        height: 56,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            try {
-                              await model.disconnectWallet();
-                            } catch (e) {
-                              if (context.mounted) {
+                              try{
+                                await model.transferToken(recipient, amount);
+
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error disconnecting: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                  const SnackBar(content: Text('Token transferred successfully!')),
                                 );
+
+                              }catch(e){
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error sending token: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               }
-                            }
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black12,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Transfer Token',
+                              style: TextStyle(fontSize: 18),
+                            ),
+
+                          )
+                        ),
+
+
+
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: 240,
+                          height: 56,
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              try {
+                                await model.disconnectWallet();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error disconnecting: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Disconnect Wallet',
+                              style: TextStyle(fontSize: 18),
                             ),
                           ),
-                          child: const Text(
-                            'Disconnect Wallet',
-                            style: TextStyle(fontSize: 18),
-                          ),
                         ),
-                      ),
-                    ],
-                  )
+                                            ],
+                                          ),
+                      )
                       : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
