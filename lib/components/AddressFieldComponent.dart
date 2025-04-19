@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 
 
 
-class CustomInputField extends StatelessWidget {
-  final String hintText;
-  final String iconAssetPath;
-  final TextEditingController controller;
 
-  const CustomInputField({
+class CustomLabeledInputField extends StatelessWidget {
+  final String hintText;
+  final String labelText;
+  final TextEditingController controller;
+  final bool isReadOnly;
+
+  const CustomLabeledInputField({
     super.key,
-    required this.iconAssetPath,
+    required this.labelText,
     required this.hintText,
     required this.controller,
+    this.isReadOnly = false,
   });
 
   @override
@@ -19,30 +22,41 @@ class CustomInputField extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final textScale = MediaQuery.of(context).textScaleFactor;
+    final safePadding = MediaQuery.of(context).padding; // Safe area padding (handles notch)
 
-    final iconSize = screenWidth * 0.06;
-    final fontSize = screenWidth * 0.04 * textScale;
+    final baseFontSize = screenWidth < screenHeight ? screenWidth * 0.03 : screenHeight * 0.04;
 
-    return CustomPaint(
-      painter: _CustomBorderPainter(),
+    final fontSize = baseFontSize * textScale;
+
+    return ClipPath(
+      clipper: _CustomAddressPainter(safePadding),
       child: Padding(
         padding: const EdgeInsets.all(1.5),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.025,
-            // vertical: screenHeight * 0.01,
+            horizontal: screenWidth * 0.050,
           ),
+          color: Colors.white12,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Image.asset(
-                iconAssetPath,
-                width: iconSize,
-                height: iconSize,
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF2D8EFF), Color(0xFF2EE4A4)],
+                ).createShader(bounds),
+                child: Text(
+                  labelText,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               SizedBox(width: screenWidth * 0.02),
               Expanded(
                 child: TextFormField(
+                  readOnly: isReadOnly,
                   controller: controller,
                   style: TextStyle(
                     color: Colors.white,
@@ -51,8 +65,8 @@ class CustomInputField extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: hintText,
                     hintStyle: TextStyle(
-                      color: Colors.grey,
                       fontSize: fontSize * 0.95,
+                      color: Colors.grey,
                     ),
                     border: InputBorder.none,
                     isDense: true,
@@ -71,23 +85,21 @@ class CustomInputField extends StatelessWidget {
   }
 }
 
-class _CustomBorderPainter extends CustomPainter {
+
+class _CustomAddressPainter extends CustomClipper<Path> {
+  final EdgeInsets safePadding;
+  _CustomAddressPainter(this.safePadding);
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.tealAccent
-      ..strokeWidth = .2
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-
-    const double notchWidth = 20;
-    const double notchHeight = 2;
+  Path getClip(Size size) {
+    final Path path = Path();
+    const double notchWidth = 30;
+    const double notchHeight = 6;
     const double cutSize = 20;
 
     // Offset amounts
-    const double topNotchOffset = 140; // move right
-    const double bottomNotchOffset = -140; // move left
+    const double topNotchOffset = 50; // move right
+    const double bottomNotchOffset = -50; // move left
 
     // Top-left angled start
     path.moveTo(cutSize, 0);
@@ -124,14 +136,9 @@ class _CustomBorderPainter extends CustomPainter {
     path.lineTo(cutSize, 0);
 
     path.close();
-
-
-    canvas.drawPath(path, paint);
-
+    return path;
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
- 
-

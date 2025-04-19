@@ -1,42 +1,73 @@
 import 'package:flutter/material.dart';
 
 
-class BuyEcmButton extends StatelessWidget {
 
+class CustomGradientButton extends StatelessWidget {
+  final String label;
+  final double? width;
+  final double? height;
+  final VoidCallback onTap;
+  final List<Color> gradientColors;
 
-  const BuyEcmButton({super.key});
+  const CustomGradientButton({
+    super.key,
+    required this.label,
+    this.width,
+    this.height,
+    required this.onTap,
+    required this.gradientColors,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: BuyEcmClipper(),
-      child: Container(
-        width: 320,
-        height: 60,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF2D8EFF), Color(0xFF2EE4A4)],
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            'Buy ECM',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 18,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        final textScale = MediaQuery.of(context).textScaleFactor;
+
+        final buttonWidth = width ?? screenWidth * 0.8;
+        final buttonHeight = height ?? screenHeight * 0.065;
+
+        return GestureDetector(
+          onTap: onTap,
+          child: ClipPath(
+            clipper: BuyEcmClipper(),
+            child: Container(
+              width: buttonWidth,
+              height: buttonHeight,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                ),
+              ),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: screenWidth * 0.045 * textScale, // responsive text
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
-
 class BuyEcmClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final Path path = Path();
-    const double notchWidth = 40;
+    const double notchWidth = 30;
     const double notchHeight = 2;
     const double cutSize = 20;
 
