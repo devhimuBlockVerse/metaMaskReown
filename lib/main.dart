@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reown_appkit/reown_appkit.dart';
-import 'package:reown_appkit_wallet_flutter/view/dashboard.dart';
-import 'package:reown_appkit_wallet_flutter/view/demo.dart';
+import 'package:reown_appkit_wallet_flutter/view/digital_model_screen.dart';
  import 'package:reown_walletkit/reown_walletkit.dart';
-// import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_viewmodel.dart';
 import 'dart:ui';
 import '../viewmodel/wallet_view_model2.dart';
 
@@ -39,7 +37,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         // home: const DashboardView(),
-        home:  DemoScreen(),
+        home:  DigitalModelScreen(),
        ),
     );
   }

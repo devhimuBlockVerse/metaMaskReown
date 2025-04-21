@@ -9,14 +9,14 @@ import '../components/loader.dart';
 
 
 
-class DemoScreen extends StatefulWidget {
-  const DemoScreen({super.key});
+class DigitalModelScreen extends StatefulWidget {
+  const DigitalModelScreen({super.key});
 
   @override
-  State<DemoScreen> createState() => _DemoScreenState();
+  State<DigitalModelScreen> createState() => _DigitalModelScreenState();
 }
 
-class _DemoScreenState extends State<DemoScreen> {
+class _DigitalModelScreenState extends State<DigitalModelScreen> {
   final usdtController = TextEditingController();
   final ecmController = TextEditingController();
   final readingMoreController = TextEditingController();
@@ -227,62 +227,6 @@ class _DemoScreenState extends State<DemoScreen> {
   }
 }
 
-
-
-// class _DemoPainter extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     final Path path = Path();
-//     const double notchWidth = 30;
-//     const double notchHeight = 6;
-//     const double cutSize = 20;
-//
-//     const double topNotchOffset = 50;
-//     const double bottomNotchOffset = -50;
-//
-//     // Start at top-left (no cut here)
-//     path.moveTo(-1, -1);
-//
-//     // Move to just before the top-right cut corner
-//     path.lineTo(size.width - cutSize, 0);
-//
-//     // Top-right corner cut
-//     path.lineTo(size.width, cutSize);
-//
-//     // Right edge down
-//     path.lineTo(size.width, size.height);
-//
-//     // Bottom-right (no cut here)
-//     path.lineTo(size.width, size.height);
-//
-//     // Bottom notch (slightly left of center)
-//     double bottomNotchCenter = (size.width / 2) + bottomNotchOffset;
-//     path.lineTo(bottomNotchCenter + (notchWidth / 2), size.height);
-//     path.lineTo(bottomNotchCenter + (notchWidth / 2), size.height - notchHeight);
-//     path.lineTo(bottomNotchCenter - (notchWidth / 2), size.height - notchHeight);
-//     path.lineTo(bottomNotchCenter - (notchWidth / 2), size.height);
-//
-//     // Move to bottom-left cut corner
-//     path.lineTo(cutSize, size.height);
-//     path.lineTo(0, size.height - cutSize);
-//
-//     // Left edge up
-//     path.lineTo(0, 0);
-//
-//     // Top notch (slightly right of center)
-//     double topNotchCenter = (size.width / 2) + topNotchOffset;
-//     path.moveTo(topNotchCenter - (notchWidth / 2), 0);
-//     path.lineTo(topNotchCenter - (notchWidth / 2), notchHeight);
-//     path.lineTo(topNotchCenter + (notchWidth / 2), notchHeight);
-//     path.lineTo(topNotchCenter + (notchWidth / 2), 0);
-//
-//     path.close();
-//     return path;
-//   }
-//
-//   @override
-//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-// }
 class _DemoPainter extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
