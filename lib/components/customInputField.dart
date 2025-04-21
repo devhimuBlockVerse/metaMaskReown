@@ -26,11 +26,11 @@ class CustomInputField extends StatelessWidget {
     return CustomPaint(
       painter: _CustomBorderPainter(),
       child: Padding(
-        padding: const EdgeInsets.all(1.5),
+        padding: const EdgeInsets.all(1.1),
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: screenWidth * 0.025,
-            // vertical: screenHeight * 0.01,
+            vertical: screenHeight * 0.001,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -72,11 +72,15 @@ class CustomInputField extends StatelessWidget {
 }
 
 class _CustomBorderPainter extends CustomPainter {
+  final gradient = LinearGradient(
+    colors: [Color(0xFF2D8EFF), Color(0xFF2EE4A4)],
+  );
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.tealAccent
-      ..strokeWidth = .2
+      // ..color = gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..strokeWidth = 0.2
       ..style = PaintingStyle.stroke;
 
     final path = Path();

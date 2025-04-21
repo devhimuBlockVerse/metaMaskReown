@@ -318,8 +318,7 @@ class WalletViewModel extends ChangeNotifier {
     }
   }
 
-
-   Future<void> transferToken(String recipientAddress, double amount) async{
+  Future<void> transferToken(String recipientAddress, double amount) async{
      if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
       throw Exception("Wallet not Connected");
     }
@@ -355,16 +354,10 @@ class WalletViewModel extends ChangeNotifier {
 
       final decimalUnits = (decimals.first as BigInt);
       final transferValue = _formatValue(amount, decimals: decimalUnits);
-
-      // final deeplink = Uri.parse('https://metamask.app.link/send?to=$recipientAddress&value=${BigInt.from(amount * 1e18).toRadixString(16)}',);
-      //   await launchUrl(deeplink, mode: LaunchMode.externalApplication);
        final metaMaskUrl = Uri.parse(
          'metamask://dapp/exampleapp',
        );
-       await launchUrl(
-           metaMaskUrl,
-           // mode: LaunchMode.externalApplication
-       );
+       await launchUrl(metaMaskUrl,);
 
       await Future.delayed(Duration(seconds: 2));
 
@@ -407,6 +400,140 @@ class WalletViewModel extends ChangeNotifier {
 
   }
 
+  Future<Map<String, dynamic>> getCurrentStageInfo() async{
+
+    try{
+      _isLoading = true;
+      notifyListeners();
+
+
+      final abiString = await rootBundle.loadString("assets/abi/SaleContractABI.json");
+      final abiData = jsonDecode(abiString);
+
+      final stageContract = DeployedContract(
+        ContractAbi.fromJson(
+          jsonEncode(abiData),
+          'eCommerce Coin',
+        ),
+        EthereumAddress.fromHex(
+            '0x02f2aA15675aED44A117aC0c55E795Be9908543D'),
+      );
+
+      final chainID = appKitModal!.selectedChain!.chainId;
+
+
+      final result = await appKitModal!.requestReadContract(
+          topic: appKitModal!.session!.topic,
+          chainId: chainID,
+          deployedContract: stageContract,
+          functionName: 'currentStageInfo',
+
+      );
+
+      if(result.isEmpty || result.length < 5){
+        throw Exception("Unexpected response from contract");
+      }
+
+
+      final stageInfo = {
+        'stageIndex': (result[0] as BigInt).toInt(),
+        'target': (result[1] as BigInt) / BigInt.from(10).pow(18),
+        'ethPrice': (result[2] as BigInt) / BigInt.from(10).pow(18),
+        'usdtPrice': (result[3] as BigInt) / BigInt.from(10).pow(6),
+        'ecmRefBonus': (result[4] as BigInt).toInt(),
+        'paymentRefBonus': (result[5] as BigInt).toInt(),
+        'ecmSold':  result[6] is BigInt ? (result[6] as BigInt)/ BigInt.from(10).pow(18) : result[6],
+      'isCompleted': result[7] as bool,
+      };
+
+      print("Stage info:");
+
+      stageInfo.forEach((key, value){
+        print('$key: $value');
+      });
+
+
+      return stageInfo ;
+
+    }catch(e){
+      print('Error fetching stage info: $e');
+      rethrow;
+    }finally{
+      _isLoading = false ;
+      notifyListeners();
+    }
+
+  }
+
+  Future<void> buyECMWithETH(
+      String referrerAddress, double ethAmount) async{
+    if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
+      throw Exception("Wallet not Connected");
+    }
+
+    try{
+
+      _isLoading = true;
+      notifyListeners();
+
+      final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+      final abiData = jsonDecode(abiString);
+
+      final tetherContract = DeployedContract(
+        ContractAbi.fromJson(
+          jsonEncode(abiData),
+          'eCommerce Coin',
+        ),
+        EthereumAddress.fromHex(
+            '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),
+      );
+
+
+
+      final chainID = appKitModal!.selectedChain!.chainId;
+      final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+      final userAddress = appKitModal.session!.getAddress(nameSpace)!;
+
+      // Convert ETH to Wei
+      final valueToSend = BigInt.from(ethAmount * 1e18);
+
+
+      final result = await appKitModal!.requestWriteContract(
+          topic: appKitModal!.session!.topic,
+          chainId: chainID,
+          deployedContract: tetherContract,
+          functionName: 'transfer',
+          transaction: Transaction(
+              from: EthereumAddress.fromHex(userAddress),
+          ),
+          parameters: [ EthereumAddress.fromHex(referrerAddress),
+            // EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
+          ]
+      );
+
+      print('Transaction Hash: $result');
+      print('runtimeType: ${result.runtimeType}');
+      Fluttertoast.showToast(
+        msg: "Transaction sent successfully!",
+        backgroundColor: Colors.green,
+      );
+      return result;
+
+    }catch(e){
+      print("Error buying ECM with ETH: $e");
+      Fluttertoast.showToast(
+        msg: "Error: ${e.toString()}",
+        backgroundColor: Colors.red,
+      );
+
+      rethrow;
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+
+
+  }
 
 
 
@@ -418,10 +545,3 @@ class WalletViewModel extends ChangeNotifier {
   }
 
 }
-// final metamaskUri = Uri.parse('https://metamask.app.link/dapp/https://reown.com/exampleapp');
-// final metamaskUri = Uri.parse('https://reown.com/exampleapp');
-// // final metamaskUri = Uri.parse('https://metamask.app.link/dapp/exampleapp');
-// await launchUrl(metamaskUri, mode: LaunchMode.externalApplication);
-
-// final deeplink = Uri.parse('https://metamask.app.link/send?to=$recipientAddress&value=${BigInt.from(amount * 1e18).toRadixString(16)}',);
-// await launchUrl(deeplink, mode: LaunchMode.externalApplication);

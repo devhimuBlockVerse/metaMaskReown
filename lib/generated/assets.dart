@@ -3,6 +3,7 @@ class Assets {
   Assets._();
 
   static const String abiMyContract = 'assets/abi/MyContract.json';
+  static const String abiSaleContractABI = 'assets/abi/SaleContractABI.json';
   static const String assetsAbiMyContract = 'assets/abi/MyContract.json';
   static const String assetsAppIcon = 'assets/app_icon.png';
   static const String fontsMontserratMedium = 'assets/fonts/Montserrat-Medium.ttf';
