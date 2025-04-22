@@ -135,8 +135,6 @@ class WalletViewModel extends ChangeNotifier {
 
     });
 
-
-
     await appKitModal.init();
 
     if(appKitModal.session != null){
@@ -147,9 +145,6 @@ class WalletViewModel extends ChangeNotifier {
         _walletAddress = appKitModal.session!.getAddress(namespace)!;
       }
     }
-
-
-
     _isLoading = false;
     notifyListeners();
   }
@@ -465,18 +460,17 @@ class WalletViewModel extends ChangeNotifier {
 
   }
 
-  Future<void> buyECMWithETH(
-      String referrerAddress, double ethAmount) async{
+
+  Future<String> buyECMWithETH( EtherAmount ethAmount) async{
     if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
       throw Exception("Wallet not Connected");
     }
 
     try{
-
       _isLoading = true;
       notifyListeners();
 
-      final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+      final abiString = await rootBundle.loadString("assets/abi/SaleContractABI.json");
       final abiData = jsonDecode(abiString);
 
       final tetherContract = DeployedContract(
@@ -485,34 +479,36 @@ class WalletViewModel extends ChangeNotifier {
           'eCommerce Coin',
         ),
         EthereumAddress.fromHex(
-            '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),
+            '0x02f2aA15675aED44A117aC0c55E795Be9908543D'),
       );
-
 
 
       final chainID = appKitModal!.selectedChain!.chainId;
       final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
-      final userAddress = appKitModal.session!.getAddress(nameSpace)!;
 
-      // Convert ETH to Wei
-      final valueToSend = BigInt.from(ethAmount * 1e18);
+      final referrerAddress = "0x0000000000000000000000000000000000000000";
 
 
+      final metaMaskUrl = Uri.parse('metamask://dapp/exampleapp',);
+      await launchUrl(metaMaskUrl,);
+
+      await Future.delayed(Duration(seconds: 2));
       final result = await appKitModal!.requestWriteContract(
           topic: appKitModal!.session!.topic,
           chainId: chainID,
           deployedContract: tetherContract,
-          functionName: 'transfer',
+          functionName: 'buyECMWithETH',
           transaction: Transaction(
-              from: EthereumAddress.fromHex(userAddress),
+            from: EthereumAddress.fromHex(appKitModal.session!.getAddress(nameSpace)!),
+            value: ethAmount,
           ),
-          parameters: [ EthereumAddress.fromHex(referrerAddress),
-            // EthereumAddress.fromHex('0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),transferValue,
-          ]
+          parameters: [ EthereumAddress.fromHex(referrerAddress)]
       );
 
       print('Transaction Hash: $result');
       print('runtimeType: ${result.runtimeType}');
+      print("ABI Functions: ${tetherContract.functions.map((f) => f.name).toList()}");
+
       Fluttertoast.showToast(
         msg: "Transaction sent successfully!",
         backgroundColor: Colors.green,
@@ -525,16 +521,87 @@ class WalletViewModel extends ChangeNotifier {
         msg: "Error: ${e.toString()}",
         backgroundColor: Colors.red,
       );
-
       rethrow;
     }finally{
       _isLoading = false;
       notifyListeners();
     }
-
-
   }
 
+  Future<String> buyECMWithUSDT( EtherAmount amount) async{
+    if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
+      throw Exception("Wallet not Connected");
+    }
+
+    try{
+      _isLoading = true;
+      notifyListeners();
+
+      final abiString = await rootBundle.loadString("assets/abi/SaleContractABI.json");
+      final abiData = jsonDecode(abiString);
+
+      final tetherContract = DeployedContract(
+        ContractAbi.fromJson(
+          jsonEncode(abiData),
+          'eCommerce Coin',
+        ),
+        EthereumAddress.fromHex(
+            '0x02f2aA15675aED44A117aC0c55E795Be9908543D'),
+      );
+
+
+      final chainID = appKitModal!.selectedChain!.chainId;
+      final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+
+      final referrerAddress = "0x0000000000000000000000000000000000000000";
+
+
+      final metaMaskUrl = Uri.parse(
+        'metamask://dapp/exampleapp',
+      );
+      await launchUrl(metaMaskUrl,);
+
+      await Future.delayed(Duration(seconds: 2));
+      // BigInt amountInWei = BigInt.from(double.parse(amount.toString()) * 1e18);
+      BigInt amountInWei = amount.getInWei;
+
+      final result = await appKitModal!.requestWriteContract(
+          topic: appKitModal!.session!.topic,
+          chainId: chainID,
+          deployedContract: tetherContract,
+          functionName: 'buyECMWithUSDT',
+          transaction: Transaction(
+            // from: EthereumAddress.fromHex(userAddress),
+            from: EthereumAddress.fromHex(appKitModal.session!.getAddress(nameSpace)!),
+            value: EtherAmount.inWei(BigInt.zero),
+            // value: ethValue,
+          ),
+          // parameters: []
+          parameters: [ amountInWei,EthereumAddress.fromHex(referrerAddress)]
+      );
+
+      print('Transaction Hash: $result');
+      print('runtimeType: ${result.runtimeType}');
+      print("ABI Functions: ${tetherContract.functions.map((f) => f.name).toList()}");
+
+      Fluttertoast.showToast(
+        msg: "Transaction sent successfully!",
+        backgroundColor: Colors.green,
+      );
+      return result;
+
+    }catch(e){
+      print("Error buying ECM with ETH: $e");
+      Fluttertoast.showToast(
+        msg: "Error: ${e.toString()}",
+        backgroundColor: Colors.red,
+      );
+      rethrow;
+    }finally{
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
 
   /// Mock function to format decimal value to token unit (BigInt)
@@ -545,3 +612,80 @@ class WalletViewModel extends ChangeNotifier {
   }
 
 }
+
+
+// Future<void> buyECMWithETH(String referrerAddress, BigInt ethAmount) async{
+//   if (appKitModal == null || !_isConnected || appKitModal!.session == null) {
+//     throw Exception("Wallet not Connected");
+//   }
+//
+//   try{
+//
+//     _isLoading = true;
+//     notifyListeners();
+//
+//     final abiString = await rootBundle.loadString("assets/abi/MyContract.json");
+//     final abiData = jsonDecode(abiString);
+//
+//     final tetherContract = DeployedContract(
+//       ContractAbi.fromJson(
+//         jsonEncode(abiData),
+//         'eCommerce Coin',
+//       ),
+//       EthereumAddress.fromHex(
+//           '0x30C8E35377208ebe1b04f78B3008AAc408F00D1d'),
+//     );
+//
+//
+//     final chainID = appKitModal!.selectedChain!.chainId;
+//     final nameSpace = ReownAppKitModalNetworks.getNamespaceForChainId(chainID);
+//     final userAddress = appKitModal.session!.getAddress(nameSpace)!;
+//
+//     // Convert ETH to Wei
+//     // final valueToSend = BigInt.from(ethAmount * 1e18);
+//     // final valueToSend = EtherAmount.fromUnitAndValue(
+//     //     EtherUnit.wei, BigInt.from(ethAmount * 1e18));
+//
+//     final ethValue = EtherAmount.fromUnitAndValue(EtherUnit.ether, ethAmount);
+//
+//     final valueToSend = EtherAmount.inWei(ethAmount);
+//
+//
+//
+//     final result = await appKitModal!.requestWriteContract(
+//         topic: appKitModal!.session!.topic,
+//         chainId: chainID,
+//         deployedContract: tetherContract,
+//         functionName: 'buyECMWithETH',
+//         transaction: Transaction(
+//           from: EthereumAddress.fromHex(userAddress),
+//           // value: valueToSend,
+//           value: ethValue,
+//         ),
+//         parameters: []
+//         // parameters: [ EthereumAddress.fromHex(referrerAddress)]
+//     );
+//
+//     print('Transaction Hash: $result');
+//     print('runtimeType: ${result.runtimeType}');
+//     Fluttertoast.showToast(
+//       msg: "Transaction sent successfully!",
+//       backgroundColor: Colors.green,
+//     );
+//     return result;
+//
+//   }catch(e){
+//     print("Error buying ECM with ETH: $e");
+//     Fluttertoast.showToast(
+//       msg: "Error: ${e.toString()}",
+//       backgroundColor: Colors.red,
+//     );
+//
+//     rethrow;
+//   }finally{
+//     _isLoading = false;
+//     notifyListeners();
+//   }
+//
+//
+// }

@@ -61,6 +61,7 @@ class CustomInputField extends StatelessWidget {
                     ),
                   ),
                   cursorColor: Colors.white,
+                  keyboardType: TextInputType.number,
                 ),
               ),
             ],

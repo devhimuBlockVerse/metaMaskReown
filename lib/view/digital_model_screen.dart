@@ -3,7 +3,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:reown_appkit_wallet_flutter/components/customInputField.dart';
 import 'package:reown_appkit_wallet_flutter/components/custonButton.dart';
+import 'package:reown_appkit_wallet_flutter/view/dashboard.dart';
 import 'package:reown_appkit_wallet_flutter/viewmodel/wallet_view_model.dart';
+import 'package:web3dart/web3dart.dart';
 
 import '../components/AddressFieldComponent.dart';
 import '../components/buy_ecm_button.dart';
@@ -22,8 +24,9 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
 
   final usdtController = TextEditingController();
   final ecmController = TextEditingController();
-  final readingMoreController =
-      TextEditingController();
+  final readingMoreController = TextEditingController();
+  final referredController = TextEditingController();
+  final String defaultReferrerAddress = '0x0000000000000000000000000000000000000000';
 
   bool isETHActive = true;
   bool isUSDTActive = false;
@@ -78,9 +81,9 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
     final ecmAmount = double.tryParse(ecmController.text) ?? 0.0;
     double result = isETHActive ? ecmAmount * _ethPrice : ecmAmount * _usdtPrice;
 
-
     // Display converted amount in the usdtController
-    usdtController.text = result.toStringAsFixed(6);
+    usdtController.text =  isETHActive ? result.toStringAsFixed(5) : result.toStringAsFixed(1);
+
   }
 
   @override
@@ -94,20 +97,13 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize =
-        MediaQuery.of(context).size;
+    final Size screenSize = MediaQuery.of(context).size;
 
-    final double screenWidth =
-        MediaQuery.of(context).size.width;
-    final double screenHeight =
-        MediaQuery.of(context).size.height;
-    final bool isPortrait =
-        screenSize.height > screenSize.width;
-    final double textScale = isPortrait
-        ? screenWidth / 400
-        : screenHeight / 400;
-    final double paddingScale =
-        screenWidth * 0.04;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final bool isPortrait = screenSize.height > screenSize.width;
+    final double textScale = isPortrait ? screenWidth / 400 : screenHeight / 400;
+    final double paddingScale = screenWidth * 0.04;
 
     return Scaffold(
       backgroundColor: Color(0xFF0A1C2F),
@@ -161,24 +157,13 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                     clipper: _DemoPainter(),
                     child: Container(
                       width: screenWidth * 0.92,
-                      // padding: const EdgeInsets.all(16.0),
-                      padding: EdgeInsets.all(
-                          screenWidth * 0.04),
-
+                      padding: EdgeInsets.all(screenWidth * 0.04),
                       decoration: BoxDecoration(
-                        color: const Color(
-                            0x4D03080E),
-                        borderRadius:
-                            BorderRadius.circular(
-                                16),
-                        border: Border.all(
-                            color:
-                                Colors.white10),
+                        color: const Color(0x4D03080E),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white10),
                       ),
                       child: Consumer<WalletViewModel>(builder: (context, walletVM, child) {
-                        final ethAmount = double.tryParse(usdtController.text) ?? 0.0;
-                        final referrer = "0x0000000000000000000000000000000000000000"; // 🔁 Replace if needed
-
 
                         return Column(
                           mainAxisSize: MainAxisSize.min,
@@ -219,54 +204,41 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                                   CustomLabeledInputField(
                                   labelText: 'Referred By:',
                                   hintText: 'Show and Enter Referred id..',
-                                  controller:
-                                      readingMoreController,
+                                  controller: referredController,
                                   isReadOnly:
                                       false, // or false
                                 ),
 
-                                const SizedBox(
-                                    height: 3),
+                                const SizedBox(height: 3),
 
                                 const Divider(
-                                  color: Colors
-                                      .white12,
+                                  color: Colors.white12,
                                   thickness: 2,
                                   height: 20,
                                 ),
-                                const SizedBox(
-                                    height: 8),
+                                const SizedBox(height: 8),
 
                                 Text(
                                   'ICO is Live',
-                                  style:
-                                      const TextStyle(
-                                    color: Colors
-                                        .white,
+                                  style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 28,
-                                    fontWeight:
-                                        FontWeight
-                                            .w600,
-                                    fontFamily:
-                                        'Oxanium',
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Oxanium',
                                     height: 1.07,
                                   ),
-                                  textAlign:
-                                      TextAlign
-                                          .center,
+                                  textAlign: TextAlign.center,
                                 ),
 
-                                const SizedBox(
-                                    height: 14),
+                                const SizedBox(height: 14),
+
+                                ///Action Buttons
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     //Buy with ETH Button
                                     Expanded(
-                                      child:
-                                      CustomButton(
+                                      child: CustomButton(
                                         text: 'Buy with ETH',
                                         icon: 'assets/icons/eth.png',
                                         isActive: isETHActive,
@@ -285,6 +257,7 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
 
                                           } catch (e) {
                                             if (context.mounted) {
+                                              print('Error fetching stage info: ${e.toString()}');
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
                                                   content: Text('Error fetching stage info: ${e.toString()}'),
@@ -304,8 +277,7 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                                           CustomButton(
                                         text: 'Buy with USDT',
                                         icon: 'assets/icons/usdt.png',
-                                        isActive:
-                                            isUSDTActive,
+                                        isActive: isUSDTActive,
                                         onPressed: ()async {
                                           try {
                                             final stageInfo = await walletVM.getCurrentStageInfo(); // Get the stage info
@@ -367,32 +339,40 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                                   label: 'Buy ECM',
                                   width: MediaQuery.of(context).size.width * 0.8,
                                   height: 40,
-                                  onTap: () async{
+                                  onTap: () async {
                                     print("ECM Purchase triggered");
-                                    final ecmAmount = double.tryParse(ecmController.text.trim()) ?? 0.0;
-                                    final ethOrUsdtAmount = double.tryParse(usdtController.text.trim())?? 0.0;
-                                    final referrer = readingMoreController.text.trim().isNotEmpty
-                                        ? readingMoreController.text.trim()
-                                        : "0x0000000000000000000000000000000000000000";
 
-                                    if(ecmAmount <=0 || ethOrUsdtAmount <= 0){
-                                      Fluttertoast.showToast(msg: "Invalid ECM Amount");
-                                      return;
-                                    }
                                     try{
-                                      if(isETHActive){
-                                        await walletVM.buyECMWithETH(referrer, ethOrUsdtAmount);
-                                      }else{
-                                        print("[BUG : ]No Implementation function for buyECMWithUSDT ");
-                                        // await walletVM.buyECMWithUSDT(referrer, ethOrUsdtAmount);
+                                      final inputEth = ecmController.text.trim();
+                                      final ethDouble = double.tryParse(inputEth);
+                                      if (ethDouble == null || ethDouble <= 0) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Enter a valid ECM amount')),
+                                        );
+                                        return;
                                       }
-                                    }catch(e){
-                                      print("Buy Failed: $e");
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Purchase failed: $e')),
-                                      );
-                                    }
+                                      if (ethDouble == null || ethDouble <= 0) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Enter a valid ECM amount')),
+                                        );
+                                        return;
+                                      }
 
+                                      final paymentAmount = BigInt.from(ethDouble * 1e18);
+
+                                      // await walletVM.buyECMWithETH(EtherAmount.inWei(paymentAmount));
+                                      if (isETHActive) {
+                                        await walletVM.buyECMWithETH(EtherAmount.inWei(paymentAmount));
+                                      } else if (isUSDTActive) {
+                                        await walletVM.buyECMWithUSDT(EtherAmount.inWei(paymentAmount));
+                                      }
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Purchase successful')),
+                                      );
+                                    }catch (e) {
+                                      debugPrint("Buy ECM failed: $e");
+                                     }
                                     },
                                   gradientColors: [
                                     Color(0xFF2D8EFF),
@@ -400,6 +380,8 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 14),
+
+
                                 if (walletVM.walletAddress != null && walletVM.walletAddress.isNotEmpty)
                                   DisconnectButton(
                                   label: 'Disconnect',
@@ -408,6 +390,8 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                                   onPressed: () async {
                                     try {
                                       await walletVM.disconnectWallet();
+                                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=> DashboardView()));
+
                                     } catch (e) {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
@@ -426,8 +410,7 @@ class _DigitalModelScreenState extends State<DigitalModelScreen> {
                           ],
                         );
                       }
-                          // child:
-                          ),
+                           ),
                     ),
                   ),
                 ),
